@@ -1,0 +1,25 @@
+# Target
+CONFIG_IDF_TARGET="esp32s3"
+
+# Serial flasher — 921600 baud for faster flashing
+CONFIG_ESPTOOLPY_BAUD_921600B=y
+
+# CPU — single core is enough and saves power
+CONFIG_FREERTOS_UNICORE=y
+
+# Power: disable unused peripherals at boot
+CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE=y
+
+# Logging — keep INFO level for measurement, drop to WARN in production
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# Wi-Fi
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=8
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=8
+
+# Deep sleep: allow RTC memory retention for fast wake
+CONFIG_ESP_SLEEP_RTC_BUS_ISO_WORKAROUND=y
+
+# Console UART — 115200 for the RPi serial logger
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200

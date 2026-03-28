@@ -1,0 +1,115 @@
+menu "Wake-on-Radio Configuration"
+
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "myssid"
+        help
+            SSID of the AP to connect to after waking.
+
+    config WIFI_PASSWORD
+        string "WiFi Password"
+        default "mypassword"
+        help
+            Password for the AP.
+
+    choice WAKE_STRATEGY
+        prompt "Wake strategy"
+        default WAKE_STRATEGY_BASELINE
+        help
+            Select the radio wake strategy to compile.
+
+        config WAKE_STRATEGY_BASELINE
+            bool "Baseline (deep sleep + timer)"
+
+        config WAKE_STRATEGY_LISTEN
+            bool "Periodic listen windows"
+
+        config WAKE_STRATEGY_ESPNOW
+            bool "ESP-NOW broadcast wake"
+
+        config WAKE_STRATEGY_BLE
+            bool "BLE advertising wake"
+
+        config WAKE_STRATEGY_DTIM
+            bool "Wi-Fi DTIM-based power save"
+    endchoice
+
+    config LISTEN_INTERVAL_MS
+        int "Listen window interval (ms)"
+        default 1000
+        depends on WAKE_STRATEGY_LISTEN || WAKE_STRATEGY_ESPNOW
+        help
+            How often to wake from light sleep and listen for a trigger.
+
+    config LISTEN_DURATION_MS
+        int "Listen window duration (ms)"
+        default 50
+        depends on WAKE_STRATEGY_LISTEN || WAKE_STRATEGY_ESPNOW
+        help
+            How long to keep the radio on each listen window.
+
+    config LISTEN_MAGIC_SSID
+        string "Magic SSID to detect in scan"
+        default "WOR_TRIGGER"
+        depends on WAKE_STRATEGY_LISTEN
+        help
+            The ESP32 scans for this SSID. When found, it wakes fully.
+
+    config LISTEN_SCAN_CHANNEL
+        int "Wi-Fi channel to scan (0 = all)"
+        default 0
+        depends on WAKE_STRATEGY_LISTEN
+        help
+            Fix to a single channel for faster scans. 0 scans all channels.
+
+    config ESPNOW_CHANNEL
+        int "ESP-NOW Wi-Fi channel"
+        default 1
+        depends on WAKE_STRATEGY_ESPNOW
+        help
+            Fixed channel for ESP-NOW communication.
+
+    config ESPNOW_MAGIC
+        hex "ESP-NOW magic trigger byte"
+        default 0xA5
+        depends on WAKE_STRATEGY_ESPNOW
+        help
+            First byte of ESP-NOW payload that triggers a full wake.
+
+    config BLE_SCAN_WINDOW_MS
+        int "BLE scan window (ms)"
+        default 100
+        depends on WAKE_STRATEGY_BLE
+        help
+            BLE scan window duration per cycle.
+
+    config BLE_SCAN_INTERVAL_MS
+        int "BLE scan interval (ms)"
+        default 2000
+        depends on WAKE_STRATEGY_BLE
+        help
+            Time between BLE scan cycles (includes sleep).
+
+    config BLE_TRIGGER_NAME
+        string "BLE trigger device name"
+        default "WOR_TRIG"
+        depends on WAKE_STRATEGY_BLE
+        help
+            BLE advertised name that triggers a full wake.
+
+    config DTIM_LISTEN_INTERVAL
+        int "DTIM listen interval multiplier"
+        default 3
+        depends on WAKE_STRATEGY_DTIM
+        help
+            Number of DTIM intervals between listens.
+            Higher = more power savings, more latency.
+
+    config DTIM_TRIGGER_PORT
+        int "UDP trigger port"
+        default 7777
+        depends on WAKE_STRATEGY_DTIM
+        help
+            UDP port to listen on for wake triggers.
+
+endmenu
