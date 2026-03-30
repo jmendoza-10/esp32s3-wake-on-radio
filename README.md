@@ -24,7 +24,7 @@ Compare power consumption across different sleep/wake strategies on the ESP32-S3
 | **listen** | Light sleep, periodic Wi-Fi scan for magic SSID | RPi broadcasts soft-AP | ~2-5 mA sleep, ~100 mA scan spikes |
 | **espnow** | Light sleep, periodic ESP-NOW listen window | ESP-NOW broadcast (0xA5) | ~2-5 mA sleep, shorter wake windows |
 | **ble** | Light sleep, BLE passive scan for trigger name | RPi BLE advertisement | ~10-15 mA scan |
-| **dtim** | Stay associated, 802.11 power save mode | UDP packet to port 7777 | ~5-20 mA avg, lowest latency |
+| **dtim** | Stay associated, 802.11 power save mode | UDP packet to port 7777 | **~15 mA avg** (dev board), lowest latency |
 
 ## Hardware
 
@@ -124,6 +124,8 @@ esp32s3-wake-on-radio/
 │   ├── flash_esp32.sh              # Build + flash with strategy selection
 │   └── deploy_rpi.sh               # SCP + setup on RPi
 ├── rpi/
+│   ├── dashboard.py                # Web dashboard (Flask + SSE + INA219)
+│   ├── templates/dashboard.html    # Dashboard frontend
 │   ├── serial_logger.py            # UART + INA219 power logger (CSV output)
 │   ├── setup_rpi.sh                # I2C/UART setup, Python venv
 │   ├── verify.sh                   # Hardware verification checks
@@ -132,7 +134,8 @@ esp32s3-wake-on-radio/
 │   ├── trigger_ble.py              # BLE advertisement trigger (hcitool)
 │   └── trigger_dtim.py             # UDP packet trigger
 └── docs/
-    └── esp32_deepsleep_10sec_timer.gif
+    ├── esp32_deepsleep_10sec_timer.gif
+    └── dtim_dashboard.gif          # DTIM strategy dashboard recording
 ```
 
 ## Serial Protocol
@@ -151,6 +154,39 @@ rpi_timestamp,type,esp_timestamp_us,state,voltage_mv,current_ua,power_uw
 2026-03-27T...,STATE,50518,,BOOT,,,
 2026-03-27T...,INA219,,,3260.0,41699.2,135939.5
 ```
+
+## DTIM Wake Strategy Results
+
+![DTIM power save dashboard — 15mA idle with UDP wake trigger](docs/dtim_dashboard.gif)
+
+The DTIM strategy keeps the ESP32-S3 associated with the AP using 802.11 power save mode. The radio wakes every 10th DTIM beacon (~1s), draws ~15 mA average on the dev board, and responds to a UDP trigger in under 1 second.
+
+**Key optimizations applied:**
+- `listen_interval=10` set before association (AP buffers frames across DTIM periods)
+- `WIFI_PS_MAX_MODEM` with auto light sleep (FreeRTOS tickless idle)
+- WiFi `MIN_ACTIVE_TIME=10ms`, `WAIT_BROADCAST_DATA_TIME=5ms` (defaults are 50/15ms)
+
+| State | Current | Notes |
+|---|---|---|
+| Idle (2s avg) | ~15 mA | Dev board with USB bridge overhead |
+| Light sleep | 40% of time | Tickless idle + auto PM |
+| WiFi duty cycle | <10% | Radio on ~15ms per 1s cycle |
+| Trigger latency | <1 s | UDP packet to port 7777 |
+
+### Dashboard
+
+The RPi dashboard (`rpi/dashboard.py`) provides real-time power monitoring:
+
+```bash
+ssh -t axon@axon-command.local \
+  'cd ~/wake-on-radio && .venv/bin/python3 dashboard.py --port /dev/ttyS0'
+```
+
+Open `http://axon-command.local:5000` in a browser. Features:
+- Live current draw chart (INA219 at 100 Hz)
+- 2-second rolling average (computed server-side from all samples)
+- ESP32 state transitions from serial log
+- One-click UDP trigger button (auto-detects ESP32 IP from serial)
 
 ## Phase 1 Baseline Results
 
