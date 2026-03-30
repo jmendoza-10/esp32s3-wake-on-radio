@@ -46,7 +46,7 @@ VENV_DIR="$SCRIPT_DIR/.venv"
 if [ ! -d "$VENV_DIR" ]; then
     python3 -m venv "$VENV_DIR"
 fi
-"$VENV_DIR/bin/pip" install --quiet pyserial smbus2
+"$VENV_DIR/bin/pip" install --quiet pyserial smbus2 flask
 
 echo ""
 echo "=== Setup complete ==="

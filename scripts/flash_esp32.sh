@@ -116,9 +116,22 @@ fi
 echo "=== Flashing wake-on-radio [$FIRMWARE] to $PORT ==="
 cd "$PROJECT_DIR"
 
-# Inject WiFi credentials and sleep duration into sdkconfig.defaults
+# Build a clean sdkconfig.defaults: base config + credentials + strategy overlay.
+# Strip any previously injected credentials or strategy-specific lines to avoid
+# duplicates that accumulate on each flash run.
 DEFAULTS_FILE="sdkconfig.defaults"
-EXISTING=$(grep -v "^CONFIG_WIFI_SSID\|^CONFIG_WIFI_PASSWORD\|^CONFIG_WAKE_SLEEP_DURATION" "$DEFAULTS_FILE" 2>/dev/null || true)
+STRATEGY_DEFAULTS="sdkconfig.defaults.${FIRMWARE}"
+
+# Collect keys from the strategy overlay so we can strip old copies from base
+STRIP_PATTERN="^CONFIG_WIFI_SSID|^CONFIG_WIFI_PASSWORD|^CONFIG_WAKE_SLEEP_DURATION"
+if [ -f "$STRATEGY_DEFAULTS" ] && [ "$FIRMWARE" != "baseline" ]; then
+    OVERLAY_KEYS=$(sed -n 's/^\(CONFIG_[A-Za-z_0-9]*\).*/\1/p' "$STRATEGY_DEFAULTS" | paste -sd '|' -)
+    if [ -n "$OVERLAY_KEYS" ]; then
+        STRIP_PATTERN="${STRIP_PATTERN}|^${OVERLAY_KEYS}"
+    fi
+fi
+
+EXISTING=$(grep -vE "$STRIP_PATTERN" "$DEFAULTS_FILE" 2>/dev/null || true)
 {
     echo "$EXISTING"
     echo "CONFIG_WIFI_SSID=\"${WIFI_SSID}\""
@@ -128,7 +141,6 @@ EXISTING=$(grep -v "^CONFIG_WIFI_SSID\|^CONFIG_WIFI_PASSWORD\|^CONFIG_WAKE_SLEEP
 echo "Config: ssid=$WIFI_SSID  sleep=${SLEEP_DURATION}s  strategy=$FIRMWARE"
 
 # Append strategy-specific sdkconfig defaults
-STRATEGY_DEFAULTS="sdkconfig.defaults.${FIRMWARE}"
 if [ -f "$STRATEGY_DEFAULTS" ] && [ "$FIRMWARE" != "baseline" ]; then
     echo "Appending $STRATEGY_DEFAULTS"
     cat "$STRATEGY_DEFAULTS" >> "$DEFAULTS_FILE"

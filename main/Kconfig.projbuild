@@ -12,6 +12,13 @@ menu "Wake-on-Radio Configuration"
         help
             Password for the AP.
 
+    config MDNS_HOSTNAME
+        string "mDNS hostname"
+        default "esp32-wor"
+        help
+            Hostname advertised via mDNS. The device will be reachable
+            at <hostname>.local (e.g. esp32-wor.local).
+
     choice WAKE_STRATEGY
         prompt "Wake strategy"
         default WAKE_STRATEGY_BASELINE
@@ -99,7 +106,7 @@ menu "Wake-on-Radio Configuration"
 
     config DTIM_LISTEN_INTERVAL
         int "DTIM listen interval multiplier"
-        default 3
+        default 10
         depends on WAKE_STRATEGY_DTIM
         help
             Number of DTIM intervals between listens.

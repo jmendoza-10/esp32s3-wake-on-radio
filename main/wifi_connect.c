@@ -5,6 +5,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
+#include "mdns.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 
@@ -39,6 +40,13 @@ static void event_handler(void *arg, esp_event_base_t base,
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_count = 0;
         s_connected = true;
+
+        /* Start mDNS so the device is reachable by hostname */
+        mdns_init();
+        mdns_hostname_set(CONFIG_MDNS_HOSTNAME);
+        mdns_instance_name_set("ESP32-S3 Wake-on-Radio");
+        ESP_LOGI(TAG, "mDNS started: %s.local", CONFIG_MDNS_HOSTNAME);
+
         if (s_wifi_events) {
             xEventGroupSetBits(s_wifi_events, WIFI_CONNECTED_BIT);
         }
@@ -71,6 +79,8 @@ esp_err_t wifi_system_init(void)
         WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(
+        IP_EVENT, IP_EVENT_GOT_IP6, &event_handler, NULL, NULL));
 
     s_system_inited = true;
     return ESP_OK;
@@ -135,6 +145,7 @@ esp_err_t wifi_connect_init(void)
 
 void wifi_connect_deinit(void)
 {
+    mdns_free();
     esp_wifi_disconnect();
     esp_wifi_stop();
     s_wifi_started = false;

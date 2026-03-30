@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wake-on-Radio Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e1e4ed;
+    --muted: #7a7f8d;
+    --accent: #5b8def;
+    --green: #4caf50;
+    --orange: #ff9800;
+    --red: #f44336;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: var(--bg);
+    color: var(--text);
+    padding: 16px;
+    font-size: 13px;
+  }
+  h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--red);
+    display: inline-block;
+  }
+  .status-dot.connected { background: var(--green); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .panel h2 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  /* Live stats bar */
+  .stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    min-width: 160px;
+  }
+  .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+  .stat-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
+  .stat-unit { font-size: 12px; color: var(--muted); }
+
+  /* Chart */
+  .chart-wrap { position: relative; height: 300px; }
+
+  /* Trigger */
+  .trigger-section { text-align: center; }
+  .trigger-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: inherit;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    margin-bottom: 12px;
+  }
+  .trigger-btn:hover { opacity: 0.85; }
+  .trigger-btn:active { opacity: 0.7; }
+  .trigger-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .trigger-info {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .trigger-count {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 8px 0;
+  }
+
+  /* State log */
+  .state-log {
+    max-height: 280px;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+  .state-log table { width: 100%; border-collapse: collapse; }
+  .state-log th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+  .state-log td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .state-log tr:last-child td { border-bottom: none; }
+
+  .state-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .state-BOOT { background: #2d3748; color: #a0aec0; }
+  .state-WAKEUP { background: #2d3748; color: #a0aec0; }
+  .state-WIFI_CONNECTING { background: #2c2a1e; color: var(--orange); }
+  .state-WIFI_CONNECTED { background: #1e2c1e; color: var(--green); }
+  .state-WIFI_PS_IDLE { background: #1e2c1e; color: #81c784; }
+  .state-TRIGGER_DETECTED { background: #1e2435; color: var(--accent); }
+  .state-ACTIVE { background: #2c1e1e; color: var(--red); }
+  .state-PRE_SLEEP { background: #2d3748; color: #a0aec0; }
+
+  /* Serial log */
+  .serial-log {
+    max-height: 180px;
+    overflow-y: auto;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  @media (max-width: 800px) {
+    .grid { grid-template-columns: 1fr; }
+    .stats { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<h1>
+  <span class="status-dot" id="statusDot"></span>
+  Wake-on-Radio Dashboard
+</h1>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-label">Current</div>
+    <div><span class="stat-value" id="statCurrent">--</span> <span class="stat-unit">mA</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Avg (2s)</div>
+    <div><span class="stat-value" id="statAvgCurrent">--</span> <span class="stat-unit">mA</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Voltage</div>
+    <div><span class="stat-value" id="statVoltage">--</span> <span class="stat-unit">mV</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Power</div>
+    <div><span class="stat-value" id="statPower">--</span> <span class="stat-unit">mW</span></div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">State</div>
+    <div class="stat-value" id="statState" style="font-size:16px">--</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Current Draw (mA)</h2>
+      <div class="chart-wrap">
+        <canvas id="powerChart"></canvas>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>Serial Log</h2>
+      <div class="serial-log" id="serialLog"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel trigger-section">
+      <h2>Trigger</h2>
+      <button class="trigger-btn" id="triggerBtn" onclick="sendTrigger()">
+        SEND UDP WAKE
+      </button>
+      <div class="trigger-info" id="triggerTarget">{{ esp32_host }}:{{ esp32_port }}</div>
+      <div style="margin-top:16px">
+        <div class="stat-label">Triggers Sent</div>
+        <div class="trigger-count" id="triggerCount">0</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>State Transitions</h2>
+      <div class="state-log" id="stateLog">
+        <table>
+          <thead><tr><th>State</th><th>ESP32 Time</th></tr></thead>
+          <tbody id="stateBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Chart setup ──────────────────────────────────────────────────────────
+
+const MAX_POINTS = 600;
+const chartData = {
+  labels: [],
+  datasets: [{
+    label: 'Current (mA)',
+    data: [],
+    borderColor: '#5b8def',
+    backgroundColor: 'rgba(91, 141, 239, 0.1)',
+    borderWidth: 1.5,
+    pointRadius: 0,
+    fill: true,
+    tension: 0.2,
+  }]
+};
+
+const chart = new Chart(document.getElementById('powerChart'), {
+  type: 'line',
+  data: chartData,
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    interaction: { intersect: false, mode: 'nearest' },
+    scales: {
+      x: {
+        display: true,
+        ticks: { color: '#7a7f8d', maxTicksLimit: 8, font: { size: 10 } },
+        grid: { color: '#2a2d3a' },
+      },
+      y: {
+        display: true,
+        beginAtZero: true,
+        ticks: { color: '#7a7f8d', font: { size: 10 } },
+        grid: { color: '#2a2d3a' },
+      }
+    },
+    plugins: {
+      legend: { display: false },
+    }
+  }
+});
+
+function addPowerPoint(ts, current_ua) {
+  const mA = current_ua / 1000;
+  const date = new Date(ts * 1000);
+  const label = date.toLocaleTimeString([], { hour12: false });
+
+  chartData.labels.push(label);
+  chartData.datasets[0].data.push(mA);
+
+  if (chartData.labels.length > MAX_POINTS) {
+    chartData.labels.shift();
+    chartData.datasets[0].data.shift();
+  }
+}
+
+// Batch chart updates to avoid excessive redraws
+let chartDirty = false;
+setInterval(() => {
+  if (chartDirty) {
+    chart.update();
+    chartDirty = false;
+  }
+}, 200);
+
+// ── Live stats ───────────────────────────────────────────────────────────
+
+function updateStats(data) {
+  document.getElementById('statCurrent').textContent = (data.current_ua / 1000).toFixed(1);
+  document.getElementById('statVoltage').textContent = data.voltage_mv.toFixed(0);
+  document.getElementById('statPower').textContent = (data.power_uw / 1000).toFixed(1);
+
+  if (data.avg_current_ua != null) {
+    document.getElementById('statAvgCurrent').textContent = (data.avg_current_ua / 1000).toFixed(1);
+  }
+}
+
+// ── State log ────────────────────────────────────────────────────────────
+
+function addStateEntry(entry) {
+  const tbody = document.getElementById('stateBody');
+  const tr = document.createElement('tr');
+
+  const espUs = parseInt(entry.esp_ts_us);
+  const espSec = (espUs / 1e6).toFixed(3);
+
+  tr.innerHTML = `
+    <td><span class="state-badge state-${entry.state}">${entry.state}</span></td>
+    <td>${espSec}s</td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+
+  // Keep max 50 rows
+  while (tbody.children.length > 50) {
+    tbody.removeChild(tbody.lastChild);
+  }
+
+  document.getElementById('statState').textContent = entry.state;
+
+  // Auto-scroll
+  const log = document.getElementById('stateLog');
+  log.scrollTop = 0;
+}
+
+// ── Serial log ───────────────────────────────────────────────────────────
+
+function addSerialLine(line) {
+  const el = document.getElementById('serialLog');
+  el.textContent += line + '\n';
+
+  // Keep last 200 lines
+  const lines = el.textContent.split('\n');
+  if (lines.length > 200) {
+    el.textContent = lines.slice(-200).join('\n');
+  }
+
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Trigger ──────────────────────────────────────────────────────────────
+
+let triggerCount = 0;
+
+async function sendTrigger() {
+  const btn = document.getElementById('triggerBtn');
+  btn.disabled = true;
+  btn.textContent = 'SENDING...';
+
+  try {
+    const resp = await fetch('/api/trigger', { method: 'POST' });
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      triggerCount++;
+      document.getElementById('triggerCount').textContent = triggerCount;
+      btn.textContent = 'SENT!';
+    } else {
+      btn.textContent = 'ERROR: ' + data.error;
+    }
+  } catch (e) {
+    btn.textContent = 'FAILED';
+  }
+
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'SEND UDP WAKE';
+  }, 1000);
+}
+
+// ── SSE connection ───────────────────────────────────────────────────────
+
+let evtSource = null;
+
+function connectSSE() {
+  evtSource = new EventSource('/api/stream');
+
+  evtSource.addEventListener('power', (e) => {
+    const d = JSON.parse(e.data);
+    addPowerPoint(d.ts, d.current_ua);
+    chartDirty = true;
+    updateStats(d);
+  });
+
+  evtSource.addEventListener('state', (e) => {
+    addStateEntry(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('log', (e) => {
+    addSerialLine(JSON.parse(e.data).line);
+  });
+
+  evtSource.addEventListener('trigger', (e) => {
+    // Visual flash on trigger send confirmation
+  });
+
+  evtSource.addEventListener('esp32_ip', (e) => {
+    const data = JSON.parse(e.data);
+    document.getElementById('triggerTarget').textContent = data.ip + ':{{ esp32_port }}';
+  });
+
+  evtSource.onopen = () => {
+    document.getElementById('statusDot').classList.add('connected');
+  };
+
+  evtSource.onerror = () => {
+    document.getElementById('statusDot').classList.remove('connected');
+    evtSource.close();
+    setTimeout(connectSSE, 2000);
+  };
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+
+async function init() {
+  // Load history
+  try {
+    const hist = await fetch('/api/history').then(r => r.json());
+    for (const p of hist) {
+      addPowerPoint(p.ts, p.current_ua);
+    }
+    chart.update();
+    if (hist.length > 0) updateStats(hist[hist.length - 1]);
+  } catch (e) {}
+
+  // Load state log
+  try {
+    const states = await fetch('/api/states').then(r => r.json());
+    for (const s of states) {
+      addStateEntry(s);
+    }
+  } catch (e) {}
+
+  connectSSE();
+}
+
+init();
+</script>
+</body>
+</html>

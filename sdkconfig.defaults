@@ -18,8 +18,29 @@ CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
 CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=8
 CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=8
 
+# IPv6
+CONFIG_LWIP_IPV6=y
+
 # Deep sleep: allow RTC memory retention for fast wake
 CONFIG_ESP_SLEEP_RTC_BUS_ISO_WORKAROUND=y
 
 # Console UART — 115200 for the RPi serial logger
 CONFIG_ESP_CONSOLE_UART_BAUDRATE=115200
+
+# Tickless idle — required for auto light sleep to actually engage
+CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
+
+# PM profiling — tracks time spent in each power state
+CONFIG_PM_PROFILING=y
+
+# Reduce per-wake radio-on time (defaults are 50ms and 15ms)
+CONFIG_WIFI_SSID="SETUP-10EC"
+CONFIG_WIFI_PASSWORD="badge5585detail"
+CONFIG_WAKE_STRATEGY_DTIM=y
+CONFIG_PM_ENABLE=y
+CONFIG_ESP_WIFI_SLP_IRAM_OPT=y
+CONFIG_LWIP_SO_RCVBUF=y
+
+# Reduce per-wake radio-on time (defaults are 50ms and 15ms)
+CONFIG_ESP_WIFI_SLP_DEFAULT_MIN_ACTIVE_TIME=10
+CONFIG_ESP_WIFI_SLP_DEFAULT_WAIT_BROADCAST_DATA_TIME=5

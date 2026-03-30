@@ -6,10 +6,13 @@ The ESP32 stays associated with the AP and listens at DTIM beacons. The AP
 buffers this UDP packet and delivers it at the next DTIM interval.
 
 Usage:
+    python3 trigger_dtim.py --host esp32-wor.local --port 7777
+
+    # Or by IP address
     python3 trigger_dtim.py --host 192.168.0.203 --port 7777
 
     # Repeated triggers for latency testing
-    python3 trigger_dtim.py --host 192.168.0.203 --count 10 --interval 5
+    python3 trigger_dtim.py --host esp32-wor.local --count 10 --interval 5
 """
 
 import argparse
@@ -20,7 +23,7 @@ import time
 def parse_args():
     p = argparse.ArgumentParser(description="DTIM trigger (UDP)")
     p.add_argument("--host", required=True,
-                   help="ESP32-S3 IP address")
+                   help="ESP32-S3 IP or mDNS hostname (e.g. esp32-wor.local)")
     p.add_argument("--port", type=int, default=7777,
                    help="UDP trigger port (default: 7777)")
     p.add_argument("--count", type=int, default=1,

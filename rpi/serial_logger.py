@@ -11,7 +11,7 @@ Captures:
 Writes everything to a single timestamped CSV for analysis.
 
 Usage:
-    python3 serial_logger.py --port /dev/ttyAMA0 --ina-channel 1 --sample-rate 100
+    python3 serial_logger.py --port /dev/ttyS0 --ina-channel 1 --sample-rate 100
 
 Requires:
     pip install pyserial smbus2
@@ -130,8 +130,8 @@ class INA219:
 def parse_args():
     p = argparse.ArgumentParser(
         description="ESP32-S3 serial + INA219 power logger")
-    p.add_argument("--port", default="/dev/ttyAMA0",
-                   help="Serial port for ESP32 UART (default: /dev/ttyAMA0)")
+    p.add_argument("--port", default="/dev/ttyS0",
+                   help="Serial port for ESP32 UART (default: /dev/ttyS0)")
     p.add_argument("--baud", type=int, default=115200, help="Baud rate")
     p.add_argument("--out", default="power_log.csv", help="Output CSV path")
     p.add_argument("--ina-channel", type=int, default=1, choices=[1, 2, 3, 4],
