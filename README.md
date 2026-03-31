@@ -1,6 +1,6 @@
 # ESP32-S3 Wake-on-Radio
 
-Low-power wake-on-radio system using ESP-IDF on an ESP32-S3, with a Raspberry Pi as the trigger source and power telemetry dashboard.
+Low-power wake-on-radio system using ESP-IDF on an ESP32-S3, with a Raspberry Pi as the trigger source, power telemetry dashboard, and Linux kernel driver for interrupt-driven wake detection.
 
 ![Deep sleep baseline with INA219 power monitoring](docs/esp32_deepsleep_10sec_timer.gif)
 
@@ -13,6 +13,8 @@ Low-power wake-on-radio system using ESP-IDF on an ESP32-S3, with a Raspberry Pi
 ## Overview
 
 Compare power consumption across different sleep/wake strategies on the ESP32-S3. The RPi continuously measures current draw via a Waveshare 4-Channel Current/Power Monitor HAT (INA219) and logs state transitions over UART.
+
+A Linux kernel driver (`esp32_wor.ko`) monitors a dedicated GPIO line from the ESP32 as an interrupt source, providing hardware-level wake detection with RTT measurement from UDP trigger to GPIO assertion.
 
 **Targets:** <10 uA deep sleep floor (chip-level), <50 ms wake-to-transmit latency
 
@@ -35,14 +37,54 @@ Compare power consumption across different sleep/wake strategies on the ESP32-S3
 ### Wiring
 
 ```
-3.3V source ---------> HAT CH1 IN+
-                        HAT CH1 GND ----> ESP32-S3 GND
-                        HAT CH1 IN- ----> ESP32-S3 3V3 pin
-RPi GND (pin 6) -----> ESP32-S3 GND
-ESP32-S3 TX (GPIO 43) > RPi RX (pin 10)
+                  ┌──────────────────────────────────┐
+                  │          Raspberry Pi 4           │
+                  │                                   │
+                  │  pin 6  (GND)  ◄──────────────────┼──── ESP32 GND
+                  │  pin 10 (RX)   ◄──────────────────┼──── ESP32 TX  (GPIO43)
+                  │  pin 11 (GPIO17) ◄────────────────┼──── ESP32 Wake (GPIO2)
+                  │                                   │
+                  │  HAT CH1 IN+   ◄── 3.3V source    │
+                  │  HAT CH1 GND  ──► ESP32 GND       │
+                  │  HAT CH1 IN-  ──► ESP32 3V3 pin   │
+                  └──────────────────────────────────┘
 ```
 
+| Connection | ESP32 Pin | RPi Pin | Purpose |
+|---|---|---|---|
+| UART TX | GPIO43 | Pin 10 (RX) | Serial telemetry (`PWR\|<ts>\|<state>`) |
+| Wake GPIO | GPIO2 | Pin 11 (GPIO17) | Interrupt-driven wake signal to kernel driver |
+| Ground | GND | Pin 6 (GND) | Common ground |
+| INA219 | 3V3 rail | HAT CH1 | Current/voltage measurement |
+
 > Do NOT connect USB to the ESP32-S3 during measurement -- the USB-UART bridge draws ~3 mA and masks the true sleep floor.
+
+### Wake GPIO Signal
+
+The ESP32 firmware drives GPIO2 HIGH when a wake trigger is detected and LOW before returning to sleep. The RPi kernel driver catches both edges as interrupts:
+
+```
+ESP32 GPIO2 ──wire──► RPi GPIO17
+                         │
+                   gpiod_to_irq()
+                         │
+                   ┌─────▼──────┐
+                   │  hard IRQ  │  rising edge  = wake start
+                   │  handler   │  falling edge = wake end
+                   └─────┬──────┘
+                         │
+              ┌──────────┼──────────────┐
+              ▼          ▼              ▼
+         wake_count   last_wake_ns   last_duration_ns
+              │          │              │
+              └───── sysfs ─────────────┘
+               /sys/devices/platform/esp32-wor/
+```
+
+GPIO stability through deep sleep is maintained by:
+- `gpio_hold_en()` — latches GPIO2 LOW through deep sleep and early boot
+- Internal pull-down enabled on ESP32 GPIO2
+- 500ms debounce in the kernel driver to filter boot glitches
 
 ## Prerequisites
 
@@ -68,25 +110,40 @@ ESP32-S3 TX (GPIO 43) > RPi RX (pin 10)
 ./scripts/flash_esp32.sh espnow --wifi-ssid YOUR_SSID --wifi-pass YOUR_PASS
 ```
 
-### 2. Set up the RPi
+### 2. Deploy to RPi
 
 ```bash
-# From your Mac — deploys scripts and installs dependencies
+# From your Mac — deploys scripts, driver, and installs everything
 ./scripts/deploy_rpi.sh axon-command.local
-
-# Or manually
-scp -r rpi/ axon@axon-command.local:~/wake-on-radio/
-ssh axon@axon-command.local 'bash ~/wake-on-radio/setup_rpi.sh'
 ```
 
-### 3. Start power logging
+This will:
+- Copy `rpi/` scripts and `driver/` sources to the RPi
+- Install system packages (kernel headers, device-tree-compiler, Python deps)
+- Build and install the `esp32_wor.ko` kernel module
+- Compile and install the Device Tree overlay
+- Configure auto-load via `modules-load.d`
+- Enable the dashboard systemd service on port 8080
+
+After a reboot, everything starts automatically.
+
+### 3. Verify
 
 ```bash
-ssh -t axon@axon-command.local \
-  'cd ~/wake-on-radio && .venv/bin/python3 serial_logger.py --port /dev/ttyS0'
+ssh axon@axon-command.local 'cd ~/wake-on-radio && ./verify.sh'
 ```
 
-### 4. Send a trigger (Phase 2)
+### 4. Use the dashboard
+
+Open `http://<rpi-ip>:8080` in a browser. Features:
+- Live current draw chart (INA219 at 100 Hz, 2-second rolling average)
+- ESP32 state transitions from serial log
+- One-click UDP trigger button (auto-detects ESP32 IP)
+- Kernel driver status (wake count, GPIO state, pulse duration)
+- Wake RTT measurement (UDP send to GPIO interrupt, with avg/p90)
+- Burst test mode (automated multi-cycle trigger testing)
+
+### 5. Manual trigger
 
 ```bash
 # DTIM — simplest, just a UDP packet
@@ -102,6 +159,29 @@ sudo python3 trigger_ble.py --name WOR_TRIG --duration 30
 python3 trigger_espnow.py --mode serial --port /dev/ttyUSB0
 ```
 
+## Linux Kernel Driver
+
+The `esp32_wor` driver is an out-of-tree platform driver that monitors the ESP32's wake GPIO via interrupt:
+
+| sysfs attribute | Description |
+|---|---|
+| `wake_count` | Total wake events detected (r/w, reset with `echo 0 >`) |
+| `active` | `1` if GPIO is currently HIGH, `0` otherwise |
+| `last_wake_ns` | Monotonic timestamp (ns) of last rising edge |
+| `last_duration_ns` | Pulse width (ns) of last wake event |
+
+```bash
+# Manual usage
+sudo insmod ~/wake-on-radio/driver/esp32_wor.ko
+cat /sys/devices/platform/esp32-wor/wake_count
+cat /sys/devices/platform/esp32-wor/active
+
+# Logs
+dmesg | grep esp32_wor
+```
+
+The dashboard reads these sysfs files at 10 Hz and computes RTT by comparing the kernel's rising-edge timestamp (`CLOCK_MONOTONIC`) with the Python-side UDP send timestamp (same clock).
+
 ## Project Structure
 
 ```
@@ -116,25 +196,32 @@ esp32s3-wake-on-radio/
 │   ├── deep_sleep.c/h              # Deep sleep with GPIO isolation
 │   ├── wifi_connect.c/h            # Wi-Fi init/connect/teardown
 │   ├── power_log.c/h               # PWR|/MEAS| protocol over UART
+│   ├── wake_gpio.c/h               # Wake GPIO output (held LOW through sleep)
 │   ├── strategy_listen.c/h         # Periodic Wi-Fi scan windows
-│   ├── strategy_espnow.c/h         # ESP-NOW broadcast listener
+│   ├── strategy_espnow.c/h        # ESP-NOW broadcast listener
 │   ├── strategy_ble.c/h            # BLE passive scan (NimBLE)
 │   └── strategy_dtim.c/h           # DTIM power save + UDP trigger
+├── driver/
+│   ├── esp32_wor.c                 # Linux kernel module (platform + GPIO IRQ)
+│   ├── Makefile                    # Out-of-tree kernel module build
+│   └── esp32-wor-overlay.dts       # Device Tree overlay for RPi 4
 ├── scripts/
 │   ├── flash_esp32.sh              # Build + flash with strategy selection
 │   └── deploy_rpi.sh               # SCP + setup on RPi
 ├── rpi/
-│   ├── dashboard.py                # Web dashboard (Flask + SSE + INA219)
-│   ├── templates/dashboard.html    # Dashboard frontend
+│   ├── dashboard.py                # Web dashboard (Flask + SSE + INA219 + driver)
+│   ├── templates/dashboard.html    # Dashboard frontend (Chart.js + real-time)
+│   ├── esp32-wor-dashboard.service # systemd unit (auto-start on port 8080)
 │   ├── serial_logger.py            # UART + INA219 power logger (CSV output)
-│   ├── setup_rpi.sh                # I2C/UART setup, Python venv
-│   ├── verify.sh                   # Hardware verification checks
+│   ├── setup_rpi.sh                # I2C/UART/driver/overlay/service setup
+│   ├── verify.sh                   # Hardware + driver verification checks
 │   ├── trigger_listen.py           # Soft-AP trigger (nmcli)
 │   ├── trigger_espnow.py           # ESP-NOW trigger (serial or scapy)
 │   ├── trigger_ble.py              # BLE advertisement trigger (hcitool)
 │   └── trigger_dtim.py             # UDP packet trigger
 └── docs/
     ├── esp32_deepsleep_10sec_timer.gif
+    ├── phase1_hardware_setup.jpg
     └── dtim_dashboard.gif          # DTIM strategy dashboard recording
 ```
 
@@ -172,21 +259,6 @@ The DTIM strategy keeps the ESP32-S3 associated with the AP using 802.11 power s
 | Light sleep | 40% of time | Tickless idle + auto PM |
 | WiFi duty cycle | <10% | Radio on ~15ms per 1s cycle |
 | Trigger latency | <1 s | UDP packet to port 7777 |
-
-### Dashboard
-
-The RPi dashboard (`rpi/dashboard.py`) provides real-time power monitoring:
-
-```bash
-ssh -t axon@axon-command.local \
-  'cd ~/wake-on-radio && .venv/bin/python3 dashboard.py --port /dev/ttyS0'
-```
-
-Open `http://axon-command.local:5000` in a browser. Features:
-- Live current draw chart (INA219 at 100 Hz)
-- 2-second rolling average (computed server-side from all samples)
-- ESP32 state transitions from serial log
-- One-click UDP trigger button (auto-detects ESP32 IP from serial)
 
 ## Phase 1 Baseline Results
 

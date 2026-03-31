@@ -6,6 +6,7 @@
 #include "deep_sleep.h"
 #include "wifi_connect.h"
 #include "power_log.h"
+#include "wake_gpio.h"
 
 #if defined(CONFIG_WAKE_STRATEGY_LISTEN)
 #include "strategy_listen.h"
@@ -52,6 +53,7 @@ static void baseline_run(void)
 void app_main(void)
 {
     power_log_state(STATE_BOOT);
+    wake_gpio_init();
 
     const char *cause = deep_sleep_wakeup_cause_str();
 

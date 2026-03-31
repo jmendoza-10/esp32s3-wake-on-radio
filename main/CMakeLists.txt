@@ -1,4 +1,4 @@
-set(SRCS "main.c" "deep_sleep.c" "wifi_connect.c" "power_log.c")
+set(SRCS "main.c" "deep_sleep.c" "wifi_connect.c" "power_log.c" "wake_gpio.c")
 
 if(CONFIG_WAKE_STRATEGY_LISTEN)
     list(APPEND SRCS "strategy_listen.c")

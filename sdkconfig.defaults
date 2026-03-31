@@ -32,15 +32,3 @@ CONFIG_FREERTOS_USE_TICKLESS_IDLE=y
 
 # PM profiling — tracks time spent in each power state
 CONFIG_PM_PROFILING=y
-
-# Reduce per-wake radio-on time (defaults are 50ms and 15ms)
-CONFIG_WIFI_SSID="SETUP-10EC"
-CONFIG_WIFI_PASSWORD="badge5585detail"
-CONFIG_WAKE_STRATEGY_DTIM=y
-CONFIG_PM_ENABLE=y
-CONFIG_ESP_WIFI_SLP_IRAM_OPT=y
-CONFIG_LWIP_SO_RCVBUF=y
-
-# Reduce per-wake radio-on time (defaults are 50ms and 15ms)
-CONFIG_ESP_WIFI_SLP_DEFAULT_MIN_ACTIVE_TIME=10
-CONFIG_ESP_WIFI_SLP_DEFAULT_WAIT_BROADCAST_DATA_TIME=5

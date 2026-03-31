@@ -55,6 +55,42 @@ else
     echo "OK — serial console disabled"
 fi
 
+# Check kernel module
+echo -n "Driver:     "
+DRIVER_DIR="$SCRIPT_DIR/driver"
+if lsmod | grep -q esp32_wor; then
+    echo "OK — esp32_wor module loaded"
+elif [ -f "$DRIVER_DIR/esp32_wor.ko" ]; then
+    echo "WARN — module built but not loaded. Load with:"
+    echo "              sudo insmod $DRIVER_DIR/esp32_wor.ko"
+    OK=false
+else
+    echo "WARN — module not built. Run setup_rpi.sh first."
+    OK=false
+fi
+
+# Check DT overlay
+echo -n "Overlay:    "
+if [ -f /boot/overlays/esp32-wor.dtbo ]; then
+    echo "OK — /boot/overlays/esp32-wor.dtbo installed"
+else
+    echo "WARN — overlay not installed. Run setup_rpi.sh first."
+    OK=false
+fi
+
+# Check sysfs (only if module is loaded)
+echo -n "Sysfs:      "
+if [ -d /sys/devices/platform/esp32-wor ]; then
+    WC=$(cat /sys/devices/platform/esp32-wor/wake_count 2>/dev/null || echo "?")
+    ACT=$(cat /sys/devices/platform/esp32-wor/active 2>/dev/null || echo "?")
+    echo "OK — wake_count=$WC active=$ACT"
+elif lsmod | grep -q esp32_wor; then
+    echo "WARN — module loaded but sysfs not found (reboot needed for overlay?)"
+    OK=false
+else
+    echo "SKIP — module not loaded"
+fi
+
 # Check Python deps
 echo -n "Python:     "
 VENV="$SCRIPT_DIR/.venv/bin/python3"
@@ -70,8 +106,19 @@ if [ "$OK" = true ]; then
     # Determine the right serial port for the logger
     UART_PORT="/dev/ttyAMA0"
     [ ! -e "$UART_PORT" ] && UART_PORT="/dev/ttyS0"
-    echo "All checks passed. Start logging with:"
+    echo "All checks passed."
+    if ! lsmod | grep -q esp32_wor; then
+        echo ""
+        echo "Load the driver with:"
+        echo "  sudo insmod ~/wake-on-radio/driver/esp32_wor.ko"
+    fi
+    echo ""
+    echo "Start logging with:"
     echo "  cd ~/wake-on-radio && .venv/bin/python3 serial_logger.py --port $UART_PORT"
+    echo ""
+    echo "Monitor wake events:"
+    echo "  cat /sys/devices/platform/esp32-wor/wake_count"
+    echo "  cat /sys/devices/platform/esp32-wor/active"
 else
     echo "Some checks failed — see above."
 fi

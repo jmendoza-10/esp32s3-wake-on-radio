@@ -6,13 +6,13 @@ Combines serial logging, INA219 power sampling, and a live web UI with
 a trigger button. Replaces serial_logger.py for interactive use.
 
 Usage:
-    python3 dashboard.py --port /dev/ttyAMA0 --ina-channel 1 --sample-rate 100
+    python3 dashboard.py --port /dev/ttyS0 --ina-channel 1 --sample-rate 100
 
     # Without INA219 (serial + trigger only)
-    python3 dashboard.py --port /dev/ttyAMA0 --no-ina
+    python3 dashboard.py --port /dev/ttyS0 --no-ina
 
     # Custom web port
-    python3 dashboard.py --port /dev/ttyAMA0 --web-port 8080
+    python3 dashboard.py --port /dev/ttyS0 --web-port 8080
 
 Requires:
     pip install flask pyserial smbus2
@@ -118,6 +118,36 @@ esp32_host = "esp32-wor.local"
 esp32_port = 7777
 esp32_ip_detected = None  # auto-detected from serial log
 
+# Kernel driver sysfs state
+SYSFS_BASE = "/sys/devices/platform/esp32-wor"
+driver_state = {
+    "available": False,
+    "wake_count": 0,
+    "active": False,
+    "last_wake_ns": 0,
+    "last_duration_ns": 0,
+}
+driver_lock = threading.Lock()
+
+# RTT tracking: UDP send → GPIO rising edge
+# Both use CLOCK_MONOTONIC (Python time.monotonic_ns == kernel ktime_get)
+last_trigger_mono_ns = 0  # set when UDP packet is sent
+trigger_ns_lock = threading.Lock()
+
+MAX_RTT_SAMPLES = 200
+rtt_samples: list[dict] = []  # {"rtt_ms": float, "ts": iso_string}
+rtt_lock = threading.Lock()
+
+# Burst test state
+burst_state = {
+    "running": False,
+    "total": 0,
+    "completed": 0,
+    "errors": 0,
+}
+burst_lock = threading.Lock()
+burst_stop = threading.Event()
+
 
 def broadcast_sse(event: str, data: dict):
     """Send an SSE event to all connected clients."""
@@ -189,6 +219,105 @@ def ina_thread(ina, sample_rate, csv_writer, csv_lock, csv_file, stop_event):
             stop_event.wait(remaining)
 
 
+# ── Driver sysfs polling thread ────────────────────────────────────────────
+
+def _read_sysfs(name):
+    """Read a single sysfs attribute, return string or None on failure."""
+    try:
+        with open(f"{SYSFS_BASE}/{name}") as f:
+            return f.read().strip()
+    except (OSError, IOError):
+        return None
+
+
+def _compute_rtt_stats():
+    """Compute avg and p90 from collected RTT samples. Caller holds rtt_lock."""
+    if not rtt_samples:
+        return 0.0, 0.0
+    values = [s["rtt_ms"] for s in rtt_samples]
+    avg = sum(values) / len(values)
+    sorted_v = sorted(values)
+    p90_idx = int(len(sorted_v) * 0.9)
+    p90 = sorted_v[min(p90_idx, len(sorted_v) - 1)]
+    return round(avg, 2), round(p90, 2)
+
+
+def driver_thread(stop_event):
+    """Poll the esp32_wor kernel driver sysfs at ~10 Hz."""
+    global last_trigger_mono_ns
+    prev_wake_count = 0
+
+    while not stop_event.is_set():
+        wc = _read_sysfs("wake_count")
+        if wc is None:
+            # Driver not loaded
+            with driver_lock:
+                if driver_state["available"]:
+                    driver_state["available"] = False
+                    broadcast_sse("driver", dict(driver_state))
+            stop_event.wait(2.0)
+            continue
+
+        active = _read_sysfs("active")
+        last_wake = _read_sysfs("last_wake_ns")
+        last_dur = _read_sysfs("last_duration_ns")
+
+        with driver_lock:
+            driver_state["available"] = True
+            driver_state["wake_count"] = int(wc)
+            driver_state["active"] = active == "1"
+            driver_state["last_wake_ns"] = int(last_wake or 0)
+            driver_state["last_duration_ns"] = int(last_dur or 0)
+            snapshot = dict(driver_state)
+
+        # Broadcast on every poll so the UI stays current
+        broadcast_sse("driver", snapshot)
+
+        # Detect new wake and compute RTT
+        new_wc = int(wc)
+        if new_wc > prev_wake_count:
+            dur_ms = int(last_dur or 0) / 1_000_000
+            wake_ns = int(last_wake or 0)
+
+            # Compute RTT: kernel rising-edge timestamp minus UDP send timestamp
+            # Both are CLOCK_MONOTONIC nanoseconds
+            with trigger_ns_lock:
+                send_ns = last_trigger_mono_ns
+
+            if send_ns > 0 and wake_ns > send_ns:
+                rtt_ms = (wake_ns - send_ns) / 1_000_000
+                now_iso = datetime.now(timezone.utc).isoformat()
+
+                with rtt_lock:
+                    rtt_samples.append({"rtt_ms": round(rtt_ms, 2), "ts": now_iso})
+                    if len(rtt_samples) > MAX_RTT_SAMPLES:
+                        del rtt_samples[:len(rtt_samples) - MAX_RTT_SAMPLES]
+                    avg_ms, p90_ms = _compute_rtt_stats()
+
+                rtt_event = {
+                    "rtt_ms": round(rtt_ms, 2),
+                    "avg_ms": avg_ms,
+                    "p90_ms": p90_ms,
+                    "count": len(rtt_samples),
+                    "ts": now_iso,
+                }
+                broadcast_sse("rtt", rtt_event)
+                print(f"Driver: wake #{new_wc} RTT={rtt_ms:.1f}ms "
+                      f"(avg={avg_ms:.1f}ms p90={p90_ms:.1f}ms "
+                      f"n={len(rtt_samples)}, pulse={dur_ms:.1f}ms)")
+
+                # Clear so we don't re-match a stale trigger
+                with trigger_ns_lock:
+                    last_trigger_mono_ns = 0
+            else:
+                print(f"Driver: wake #{new_wc} (duration={dur_ms:.1f}ms, "
+                      f"no trigger timestamp for RTT)")
+
+            prev_wake_count = new_wc
+
+        stop_event.wait(0.1)
+
+
 # ── Serial reader thread ───────────────────────────────────────────────────
 
 _IP_RE = re.compile(r"Got IP:\s*(\d+\.\d+\.\d+\.\d+)")
@@ -251,18 +380,131 @@ def index():
 @app.route("/api/trigger", methods=["POST"])
 def trigger():
     """Send UDP wake trigger to ESP32."""
-    default_host = esp32_ip_detected or esp32_host
-    host = request.json.get("host", default_host) if request.is_json else default_host
-    port = request.json.get("port", esp32_port) if request.is_json else esp32_port
+    host = esp32_ip_detected or esp32_host
+    if _send_one_trigger():
+        return jsonify({"status": "ok", "host": host, "port": esp32_port})
+    else:
+        return jsonify({"status": "error", "error": "send failed"}), 500
 
+
+def _send_one_trigger():
+    """Send a single UDP trigger and record monotonic time for RTT. Returns True on success."""
+    global last_trigger_mono_ns
+    host = esp32_ip_detected or esp32_host
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(b"WAKE", (host, int(port)))
+        with trigger_ns_lock:
+            last_trigger_mono_ns = time.monotonic_ns()
+        sock.sendto(b"WAKE", (host, int(esp32_port)))
         sock.close()
         broadcast_sse("trigger", {"ts": datetime.now(timezone.utc).isoformat()})
-        return jsonify({"status": "ok", "host": host, "port": port})
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
+        return True
+    except OSError:
+        return False
+
+
+def burst_thread(count, interval):
+    """Run a burst of triggers, waiting for each wake cycle to complete."""
+    global last_trigger_mono_ns
+
+    with burst_lock:
+        burst_state["running"] = True
+        burst_state["total"] = count
+        burst_state["completed"] = 0
+        burst_state["errors"] = 0
+
+    broadcast_sse("burst", dict(burst_state))
+
+    for i in range(count):
+        if burst_stop.is_set():
+            break
+
+        # Wait for ESP32 to be in idle state (GPIO LOW, not active)
+        # before sending the next trigger
+        for _ in range(100):  # up to 10 seconds
+            if burst_stop.is_set():
+                break
+            with driver_lock:
+                active = driver_state.get("active", False)
+            if not active:
+                break
+            time.sleep(0.1)
+
+        if burst_stop.is_set():
+            break
+
+        # Small delay to let ESP32 finish rebooting and reach DTIM idle
+        time.sleep(interval)
+
+        if burst_stop.is_set():
+            break
+
+        wc_before = 0
+        with driver_lock:
+            wc_before = driver_state.get("wake_count", 0)
+
+        ok = _send_one_trigger()
+
+        with burst_lock:
+            if ok:
+                burst_state["completed"] += 1
+            else:
+                burst_state["errors"] += 1
+            snapshot = dict(burst_state)
+
+        broadcast_sse("burst", snapshot)
+        print(f"Burst: {snapshot['completed']}/{count}"
+              f"{' (error)' if not ok else ''}")
+
+        # Wait for this wake cycle to complete (GPIO goes HIGH then LOW)
+        # Timeout after 15 seconds
+        for _ in range(150):
+            if burst_stop.is_set():
+                break
+            with driver_lock:
+                wc_now = driver_state.get("wake_count", 0)
+            if wc_now > wc_before:
+                break
+            time.sleep(0.1)
+
+    with burst_lock:
+        burst_state["running"] = False
+    broadcast_sse("burst", dict(burst_state))
+    burst_stop.clear()
+    print(f"Burst complete: {burst_state['completed']}/{count} "
+          f"({burst_state['errors']} errors)")
+
+
+@app.route("/api/burst/start", methods=["POST"])
+def burst_start():
+    """Start a burst test: POST {"count": 10, "interval": 5}"""
+    with burst_lock:
+        if burst_state["running"]:
+            return jsonify({"status": "error", "error": "burst already running"}), 409
+
+    data = request.get_json(force=True)
+    count = int(data.get("count", 10))
+    interval = float(data.get("interval", 5))
+
+    burst_stop.clear()
+    t = threading.Thread(target=burst_thread, daemon=True,
+                         args=(count, interval))
+    t.start()
+    return jsonify({"status": "ok", "count": count, "interval": interval})
+
+
+@app.route("/api/burst/stop", methods=["POST"])
+def burst_stop_api():
+    """Stop a running burst test."""
+    burst_stop.set()
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/burst")
+def burst_info():
+    """Return current burst test state."""
+    with burst_lock:
+        return jsonify(dict(burst_state))
 
 
 @app.route("/api/history")
@@ -280,6 +522,26 @@ def esp32_info():
         "host": esp32_host,
         "port": esp32_port,
     })
+
+
+@app.route("/api/driver")
+def driver_info():
+    """Return current kernel driver state."""
+    with driver_lock:
+        return jsonify(dict(driver_state))
+
+
+@app.route("/api/rtt")
+def rtt_info():
+    """Return RTT measurement history and stats."""
+    with rtt_lock:
+        avg_ms, p90_ms = _compute_rtt_stats()
+        return jsonify({
+            "samples": list(rtt_samples),
+            "avg_ms": avg_ms,
+            "p90_ms": p90_ms,
+            "count": len(rtt_samples),
+        })
 
 
 @app.route("/api/states")
@@ -318,8 +580,8 @@ def stream():
 
 def parse_args():
     p = argparse.ArgumentParser(description="Wake-on-Radio Dashboard")
-    p.add_argument("--port", default="/dev/ttyAMA0",
-                   help="Serial port for ESP32 UART (default: /dev/ttyAMA0)")
+    p.add_argument("--port", default="/dev/ttyS0",
+                   help="Serial port for ESP32 UART (default: /dev/ttyS0)")
     p.add_argument("--baud", type=int, default=115200, help="Baud rate")
     p.add_argument("--out", default="power_log.csv", help="Output CSV path")
     p.add_argument("--ina-channel", type=int, default=1, choices=[1, 2, 3, 4],
@@ -381,6 +643,14 @@ def main():
     t = threading.Thread(target=serial_thread, daemon=True,
                          args=(ser, csv_writer, csv_lock_obj, csv_file, stop_event))
     t.start()
+
+    # Start driver sysfs poller
+    t = threading.Thread(target=driver_thread, daemon=True, args=(stop_event,))
+    t.start()
+    if Path(SYSFS_BASE).exists():
+        print(f"Driver: monitoring {SYSFS_BASE}")
+    else:
+        print(f"Driver: {SYSFS_BASE} not found (module not loaded?)")
 
     print(f"Logging to: {out_path}")
     print(f"ESP32 target: {esp32_host}:{esp32_port}")

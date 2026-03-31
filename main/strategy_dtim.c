@@ -12,6 +12,7 @@
 #include "wifi_connect.h"
 #include "power_log.h"
 #include "deep_sleep.h"
+#include "wake_gpio.h"
 
 static const char *TAG = "dtim";
 
@@ -110,11 +111,13 @@ void strategy_dtim_run(void)
     /* Block until a UDP trigger arrives */
     if (wait_for_udp_trigger()) {
         power_log_state(STATE_TRIGGER_DETECTED);
+        wake_gpio_assert();
         ESP_LOGI(TAG, "Trigger received — doing active work");
         power_log_state(STATE_ACTIVE);
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 
+    wake_gpio_deassert();
     wifi_connect_deinit();
     power_log_state(STATE_PRE_SLEEP);
     power_log_summary();

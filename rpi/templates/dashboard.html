@@ -151,6 +151,56 @@
   .state-ACTIVE { background: #2c1e1e; color: var(--red); }
   .state-PRE_SLEEP { background: #2d3748; color: #a0aec0; }
 
+  /* RTT panel */
+  .rtt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .rtt-stat { text-align: center; padding: 8px; }
+  .rtt-stat .stat-value { font-size: 20px; }
+  .rtt-history {
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .rtt-history table { width: 100%; border-collapse: collapse; }
+  .rtt-history th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+  }
+  .rtt-history td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+
+  /* Driver status */
+  .driver-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .driver-stat {
+    text-align: center;
+    padding: 8px;
+  }
+  .driver-stat .stat-value { font-size: 20px; }
+  .driver-indicator {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--muted);
+    vertical-align: middle;
+    transition: background 0.2s;
+  }
+  .driver-indicator.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .driver-indicator.unavailable { background: var(--red); }
+
   /* Serial log */
   .serial-log {
     max-height: 180px;
@@ -223,6 +273,89 @@
       <div style="margin-top:16px">
         <div class="stat-label">Triggers Sent</div>
         <div class="trigger-count" id="triggerCount">0</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>Burst Test</h2>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <div style="flex:1">
+          <label class="stat-label" for="burstCount">Cycles</label>
+          <input id="burstCount" type="number" value="10" min="1" max="1000"
+                 style="width:100%; padding:6px; background:var(--bg); color:var(--text);
+                        border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px;">
+        </div>
+        <div style="flex:1">
+          <label class="stat-label" for="burstInterval">Interval (s)</label>
+          <input id="burstInterval" type="number" value="5" min="1" max="60" step="0.5"
+                 style="width:100%; padding:6px; background:var(--bg); color:var(--text);
+                        border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px;">
+        </div>
+      </div>
+      <button class="trigger-btn" id="burstBtn" onclick="toggleBurst()" style="background:var(--green)">
+        START BURST
+      </button>
+      <div id="burstStatus" style="margin-top:12px; display:none;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span class="stat-label">Progress</span>
+          <span id="burstProgress" style="font-weight:600">0 / 0</span>
+        </div>
+        <div style="background:var(--bg); border-radius:4px; height:8px; overflow:hidden;">
+          <div id="burstBar" style="background:var(--green); height:100%; width:0%; transition:width 0.3s;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px;">
+          <span class="stat-label">Errors</span>
+          <span id="burstErrors" style="font-weight:600; color:var(--muted)">0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>Kernel Driver <span class="driver-indicator" id="driverDot" title="Driver not loaded"></span></h2>
+      <div class="driver-grid">
+        <div class="driver-stat">
+          <div class="stat-label">Wake Count</div>
+          <div class="stat-value" id="driverWakeCount">--</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">GPIO Active</div>
+          <div class="stat-value" id="driverActive">--</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Last Duration</div>
+          <div class="stat-value" id="driverDuration" style="font-size:16px">--</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Last Wake</div>
+          <div class="stat-value" id="driverLastWake" style="font-size:16px">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>Wake RTT</h2>
+      <div class="rtt-grid">
+        <div class="rtt-stat">
+          <div class="stat-label">Last</div>
+          <div class="stat-value" id="rttLast" style="color:var(--accent)">--</div>
+          <div class="stat-unit">ms</div>
+        </div>
+        <div class="rtt-stat">
+          <div class="stat-label">Avg</div>
+          <div class="stat-value" id="rttAvg">--</div>
+          <div class="stat-unit">ms</div>
+        </div>
+        <div class="rtt-stat">
+          <div class="stat-label">P90</div>
+          <div class="stat-value" id="rttP90">--</div>
+          <div class="stat-unit">ms</div>
+        </div>
+      </div>
+      <div class="rtt-history" id="rttHistory">
+        <table>
+          <thead><tr><th>#</th><th>RTT</th><th>Time</th></tr></thead>
+          <tbody id="rttBody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -389,6 +522,168 @@ async function sendTrigger() {
   }, 1000);
 }
 
+// ── Burst test ──────────────────────────────────────────────────────────
+
+let burstRunning = false;
+
+async function toggleBurst() {
+  const btn = document.getElementById('burstBtn');
+
+  if (burstRunning) {
+    btn.disabled = true;
+    btn.textContent = 'STOPPING...';
+    await fetch('/api/burst/stop', { method: 'POST' });
+    return;
+  }
+
+  const count = parseInt(document.getElementById('burstCount').value) || 10;
+  const interval = parseFloat(document.getElementById('burstInterval').value) || 5;
+
+  btn.disabled = true;
+  try {
+    const resp = await fetch('/api/burst/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count, interval }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') {
+      btn.textContent = data.error || 'ERROR';
+      setTimeout(() => { btn.disabled = false; btn.textContent = 'START BURST'; }, 2000);
+      return;
+    }
+  } catch (e) {
+    btn.textContent = 'FAILED';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'START BURST'; }, 2000);
+    return;
+  }
+}
+
+function updateBurst(d) {
+  const btn = document.getElementById('burstBtn');
+  const status = document.getElementById('burstStatus');
+  const progress = document.getElementById('burstProgress');
+  const bar = document.getElementById('burstBar');
+  const errors = document.getElementById('burstErrors');
+
+  if (d.running) {
+    burstRunning = true;
+    status.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'STOP';
+    btn.style.background = 'var(--red)';
+    // Disable manual trigger during burst
+    document.getElementById('triggerBtn').disabled = true;
+  } else {
+    burstRunning = false;
+    btn.disabled = false;
+    btn.textContent = 'START BURST';
+    btn.style.background = 'var(--green)';
+    document.getElementById('triggerBtn').disabled = false;
+  }
+
+  if (d.total > 0) {
+    progress.textContent = `${d.completed} / ${d.total}`;
+    bar.style.width = `${(d.completed / d.total) * 100}%`;
+    errors.textContent = d.errors;
+    errors.style.color = d.errors > 0 ? 'var(--red)' : 'var(--muted)';
+    status.style.display = 'block';
+  }
+}
+
+// ── RTT tracking ────────────────────────────────────────────────────────
+
+let rttCount = 0;
+
+function updateRtt(d) {
+  document.getElementById('rttLast').textContent = d.rtt_ms.toFixed(1);
+  document.getElementById('rttAvg').textContent = d.avg_ms.toFixed(1);
+  document.getElementById('rttP90').textContent = d.p90_ms.toFixed(1);
+
+  rttCount = d.count;
+
+  // Add row to history table
+  const tbody = document.getElementById('rttBody');
+  const tr = document.createElement('tr');
+  const time = new Date(d.ts).toLocaleTimeString([], { hour12: false });
+  tr.innerHTML = `<td>${d.count}</td><td>${d.rtt_ms.toFixed(1)} ms</td><td>${time}</td>`;
+  tbody.insertBefore(tr, tbody.firstChild);
+
+  // Keep max 50 rows
+  while (tbody.children.length > 50) {
+    tbody.removeChild(tbody.lastChild);
+  }
+}
+
+function loadRttHistory(data) {
+  document.getElementById('rttAvg').textContent = data.avg_ms.toFixed(1);
+  document.getElementById('rttP90').textContent = data.p90_ms.toFixed(1);
+
+  if (data.samples.length > 0) {
+    const last = data.samples[data.samples.length - 1];
+    document.getElementById('rttLast').textContent = last.rtt_ms.toFixed(1);
+  }
+
+  rttCount = data.count;
+  const tbody = document.getElementById('rttBody');
+  // Show last 50
+  const recent = data.samples.slice(-50).reverse();
+  let idx = data.count;
+  for (const s of recent) {
+    const tr = document.createElement('tr');
+    const time = new Date(s.ts).toLocaleTimeString([], { hour12: false });
+    tr.innerHTML = `<td>${idx}</td><td>${s.rtt_ms.toFixed(1)} ms</td><td>${time}</td>`;
+    tbody.appendChild(tr);
+    idx--;
+  }
+}
+
+// ── Driver status ────────────────────────────────────────────────────────
+
+function updateDriver(d) {
+  const dot = document.getElementById('driverDot');
+  const wcEl = document.getElementById('driverWakeCount');
+  const actEl = document.getElementById('driverActive');
+  const durEl = document.getElementById('driverDuration');
+  const lwEl = document.getElementById('driverLastWake');
+
+  if (!d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = 'Driver not loaded';
+    wcEl.textContent = '--';
+    actEl.textContent = '--';
+    durEl.textContent = '--';
+    lwEl.textContent = '--';
+    return;
+  }
+
+  dot.className = 'driver-indicator' + (d.active ? ' active' : '');
+  dot.title = d.active ? 'GPIO HIGH — wake active' : 'GPIO LOW — idle';
+  wcEl.textContent = d.wake_count;
+  actEl.textContent = d.active ? 'HIGH' : 'LOW';
+  actEl.style.color = d.active ? 'var(--green)' : 'var(--muted)';
+
+  if (d.last_duration_ns > 0) {
+    const ms = d.last_duration_ns / 1e6;
+    durEl.textContent = ms >= 1000 ? (ms / 1000).toFixed(2) + 's' : ms.toFixed(1) + 'ms';
+  } else {
+    durEl.textContent = '--';
+  }
+
+  if (d.wake_count > 0) {
+    if (!updateDriver._lastSeenWc || d.wake_count > updateDriver._lastSeenWc) {
+      updateDriver._lastWakeTime = Date.now();
+      updateDriver._lastSeenWc = d.wake_count;
+    }
+    if (updateDriver._lastWakeTime) {
+      const sAgo = Math.round((Date.now() - updateDriver._lastWakeTime) / 1000);
+      lwEl.textContent = sAgo + 's ago';
+    }
+  } else {
+    lwEl.textContent = '--';
+  }
+}
+
 // ── SSE connection ───────────────────────────────────────────────────────
 
 let evtSource = null;
@@ -413,6 +708,18 @@ function connectSSE() {
 
   evtSource.addEventListener('trigger', (e) => {
     // Visual flash on trigger send confirmation
+  });
+
+  evtSource.addEventListener('driver', (e) => {
+    updateDriver(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('rtt', (e) => {
+    updateRtt(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('burst', (e) => {
+    updateBurst(JSON.parse(e.data));
   });
 
   evtSource.addEventListener('esp32_ip', (e) => {
@@ -450,6 +757,24 @@ async function init() {
     for (const s of states) {
       addStateEntry(s);
     }
+  } catch (e) {}
+
+  // Load driver state
+  try {
+    const drv = await fetch('/api/driver').then(r => r.json());
+    updateDriver(drv);
+  } catch (e) {}
+
+  // Load RTT history
+  try {
+    const rtt = await fetch('/api/rtt').then(r => r.json());
+    loadRttHistory(rtt);
+  } catch (e) {}
+
+  // Load burst state (in case page reloads mid-burst)
+  try {
+    const burst = await fetch('/api/burst').then(r => r.json());
+    updateBurst(burst);
   } catch (e) {}
 
   connectSSE();

@@ -119,4 +119,12 @@ menu "Wake-on-Radio Configuration"
         help
             UDP port to listen on for wake triggers.
 
+    config WAKE_GPIO_NUM
+        int "Wake signal GPIO number"
+        default 2
+        help
+            GPIO pin driven HIGH when a wake trigger is detected.
+            Connected to the RPi for interrupt-driven wake notification.
+            Default GPIO4 is safe on ESP32-S3-DevKitC-1.
+
 endmenu

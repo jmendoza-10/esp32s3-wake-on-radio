@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Device Tree Overlay for ESP32-S3 Wake-on-Radio driver on Raspberry Pi 4
+ *
+ * Wiring:
+ *   ESP32 GPIO4 (wake output) → RPi GPIO17 (pin 11)
+ *   ESP32 GND                 → RPi GND   (pin 6/9/14/etc.)
+ *
+ * The ESP32 firmware drives GPIO4 HIGH on TRIGGER_DETECTED and LOW
+ * when returning to idle.  The RPi kernel driver catches both edges
+ * as interrupts.
+ *
+ * Install:
+ *   dtc -@ -I dts -O dtb -o esp32-wor.dtbo esp32-wor-overlay.dts
+ *   sudo cp esp32-wor.dtbo /boot/overlays/
+ *   # Add to /boot/config.txt:
+ *   #   dtoverlay=esp32-wor
+ */
+
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2711";   /* RPi 4 */
+
+	fragment@0 {
+		target-path = "/";
+		__overlay__ {
+			esp32_wor: esp32-wor {
+				compatible = "custom,esp32-wor";
+				/*
+				 * RPi GPIO17, active-high.
+				 * The driver requests both edges for
+				 * interrupt-driven wake detection.
+				 */
+				wake-gpios = <&gpio 17 0>;  /* GPIO_ACTIVE_HIGH */
+				/* Pull-down keeps line LOW during ESP32 reset/boot glitches */
+				status = "okay";
+			};
+		};
+	};
+};

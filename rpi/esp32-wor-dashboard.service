@@ -1,0 +1,18 @@
+[Unit]
+Description=ESP32-S3 Wake-on-Radio Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=axon
+SupplementaryGroups=dialout i2c
+WorkingDirectory=/home/axon/wake-on-radio
+ExecStart=/home/axon/wake-on-radio/.venv/bin/python3 dashboard.py --port /dev/ttyS0 --web-port 8080
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

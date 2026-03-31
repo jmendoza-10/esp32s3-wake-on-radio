@@ -4,6 +4,7 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_sleep.h"
+#include "driver/gpio.h"
 #include "driver/rtc_io.h"
 
 static const char *TAG = "deep_sleep";
