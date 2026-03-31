@@ -2,7 +2,7 @@
 
 Low-power wake-on-radio system using ESP-IDF on an ESP32-S3, with a Raspberry Pi as the trigger source, power telemetry dashboard, and Linux kernel driver for interrupt-driven wake detection.
 
-![Deep sleep baseline with INA219 power monitoring](docs/esp32_deepsleep_10sec_timer.gif)
+![Burst test with kernel driver wake detection and RTT measurement](docs/driver_burst_dashboard.gif)
 
 ### Phase 1 Hardware Setup
 
@@ -33,6 +33,7 @@ A Linux kernel driver (`esp32_wor.ko`) monitors a dedicated GPIO line from the E
 - ESP32-S3-DevKitC-1 (N16R8)
 - Raspberry Pi 4
 - Waveshare 4-Channel Current/Power Monitor HAT
+- Cypress CY7C68013A (FX2LP) board (optional, for logic analyzer)
 
 ### Wiring
 
@@ -58,6 +59,45 @@ A Linux kernel driver (`esp32_wor.ko`) monitors a dedicated GPIO line from the E
 | INA219 | 3V3 rail | HAT CH1 | Current/voltage measurement |
 
 > Do NOT connect USB to the ESP32-S3 during measurement -- the USB-UART bridge draws ~3 mA and masks the true sleep floor.
+
+### Logic Analyzer (FX2LP)
+
+A Cypress CY7C68013A (FX2LP) development board can passively monitor the wake GPIO signal for timing analysis. The board runs the open-source `fx2lafw` firmware (auto-loaded by sigrok) which turns the Port A pins into 8 logic analyzer input channels.
+
+**FX2LP pin mapping (right-side header):**
+
+| Board label | Logic Analyzer Channel | Connect to |
+|---|---|---|
+| PA0 | CH0 | Wake signal (ESP32 GPIO2 / RPi GPIO17 shared node) |
+| PA1 | CH1 | (spare — e.g. UART TX for protocol decode) |
+| PA2-PA7 | CH2-CH7 | (spare) |
+| GND (left header) | Ground | RPi pin 6 (common GND) |
+
+**Wiring diagram with logic analyzer:**
+
+```
+FX2LP Board                      RPi 4 Header              ESP32-S3
+(USB to RPi USB-A)               (active signals)           (GPIO output)
+──────────────────               ──────────────              ────────────
+                                 pin 6  (GND) ◄──────────── GND
+PA0 ──────────────────────────── pin 11 (GPIO17) ◄───────── GPIO2 (wake)
+GND ──────────────────────────── pin 6  (GND)
+                                 pin 10 (RX) ◄────────────── GPIO43 (TX)
+```
+
+All three devices (ESP32, RPi, FX2LP) connect to the **same wake signal node** — the FX2LP is purely passive (high-impedance input) and does not affect the signal. All three share a common ground.
+
+**Power:** The FX2LP board is powered via USB from one of the RPi's USB-A ports. Do NOT connect the FX2LP VCC pin to anything — it is a power output, not an input.
+
+**Voltage levels:** All signals are 3.3V. The FX2LP inputs are 3.3V/5V tolerant — no level shifting is needed.
+
+**What to look for in captures:**
+- Rising edge on CH0: ESP32 detected a trigger, called `wake_gpio_assert()`
+- Falling edge on CH0: ESP32 called `wake_gpio_deassert()` before sleep
+- Pulse width: should match the kernel driver's `last_duration_ns` sysfs value
+- Glitches < 50ms: the kernel driver filters these (`DEBOUNCE_NS`), but the analyzer captures them for validation
+
+**Software:** The `setup_rpi.sh` script installs `sigrok` and `sigrok-firmware-fx2lafw`. The dashboard auto-detects the FX2LP when plugged in and provides start/stop capture controls with downloadable `.sr` files. Open captures in [PulseView](https://sigrok.org/wiki/PulseView) for detailed analysis.
 
 ### Wake GPIO Signal
 
@@ -142,6 +182,7 @@ Open `http://<rpi-ip>:8080` in a browser. Features:
 - Kernel driver status (wake count, GPIO state, pulse duration)
 - Wake RTT measurement (UDP send to GPIO interrupt, with avg/p90)
 - Burst test mode (automated multi-cycle trigger testing)
+- Logic analyzer controls (auto-detects FX2LP, start/stop capture, download `.sr` files)
 
 ### 5. Manual trigger
 
@@ -243,8 +284,6 @@ rpi_timestamp,type,esp_timestamp_us,state,voltage_mv,current_ua,power_uw
 ```
 
 ## DTIM Wake Strategy Results
-
-![Burst test with kernel driver wake detection and RTT measurement](docs/driver_burst_dashboard.gif)
 
 ![DTIM power save dashboard — 15mA idle with UDP wake trigger](docs/dtim_dashboard.gif)
 

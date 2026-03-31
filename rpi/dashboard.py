@@ -22,9 +22,11 @@ Open http://axon-command.local:5000 in a browser.
 
 import argparse
 import csv
+import glob as glob_mod
 import json
 import queue
 import socket
+import subprocess
 import threading
 import time
 from datetime import datetime, timezone
@@ -33,7 +35,7 @@ from pathlib import Path
 import re
 
 import serial
-from flask import Flask, Response, render_template, request, jsonify
+from flask import Flask, Response, render_template, request, jsonify, send_file
 
 # ── INA219 registers and constants ──────────────────────────────────────────
 
@@ -147,6 +149,58 @@ burst_state = {
 }
 burst_lock = threading.Lock()
 burst_stop = threading.Event()
+
+
+# ── Logic analyzer state ───────────────────────────────────────────────────
+
+CAPTURE_DIR = Path("/tmp/wor-captures")
+CAPTURE_DIR.mkdir(exist_ok=True)
+
+la_state = {
+    "available": False,
+    "device": None,        # e.g. "fx2lafw"
+    "capturing": False,
+    "sample_rate": "1m",   # sigrok format: 1m = 1 MHz
+    "file": None,          # current/last capture file path
+    "started_at": None,
+    "error": None,
+}
+la_lock = threading.Lock()
+la_process: subprocess.Popen | None = None
+
+
+def _detect_fx2() -> str | None:
+    """Run sigrok-cli --scan and return driver name if FX2 device found."""
+    try:
+        result = subprocess.run(
+            ["sigrok-cli", "--scan"],
+            capture_output=True, text=True, timeout=10,
+        )
+        for line in result.stdout.splitlines():
+            if "fx2lafw" in line.lower():
+                return "fx2lafw"
+        return None
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+
+def la_detect_thread(stop_event):
+    """Periodically check if FX2 logic analyzer is connected."""
+    while not stop_event.is_set():
+        driver = _detect_fx2()
+        with la_lock:
+            was_available = la_state["available"]
+            la_state["available"] = driver is not None
+            la_state["device"] = driver
+            if not driver and la_state["capturing"]:
+                la_state["capturing"] = False
+                la_state["error"] = "Device disconnected"
+            snapshot = dict(la_state)
+
+        if snapshot["available"] != was_available:
+            broadcast_sse("logic_analyzer", snapshot)
+
+        stop_event.wait(5.0)
 
 
 def broadcast_sse(event: str, data: dict):
@@ -507,6 +561,114 @@ def burst_info():
         return jsonify(dict(burst_state))
 
 
+@app.route("/api/logic-analyzer")
+def la_info():
+    """Return current logic analyzer state."""
+    with la_lock:
+        return jsonify(dict(la_state))
+
+
+@app.route("/api/logic-analyzer/start", methods=["POST"])
+def la_start():
+    """Start a logic analyzer capture."""
+    global la_process
+    with la_lock:
+        if not la_state["available"]:
+            return jsonify({"status": "error", "error": "No device detected"}), 404
+        if la_state["capturing"]:
+            return jsonify({"status": "error", "error": "Already capturing"}), 409
+
+    data = request.get_json(force=True) if request.data else {}
+    sample_rate = data.get("sample_rate", "1m")
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    capture_file = str(CAPTURE_DIR / f"capture_{ts}.sr")
+
+    cmd = [
+        "sigrok-cli", "-d", "fx2lafw",
+        "-c", f"samplerate={sample_rate}",
+        "--continuous",
+        "-o", capture_file,
+    ]
+
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+    except FileNotFoundError:
+        return jsonify({"status": "error", "error": "sigrok-cli not found"}), 500
+
+    la_process = proc
+
+    with la_lock:
+        la_state["capturing"] = True
+        la_state["sample_rate"] = sample_rate
+        la_state["file"] = capture_file
+        la_state["started_at"] = datetime.now(timezone.utc).isoformat()
+        la_state["error"] = None
+        snapshot = dict(la_state)
+
+    broadcast_sse("logic_analyzer", snapshot)
+    print(f"Logic Analyzer: capture started → {capture_file} @ {sample_rate}Hz")
+
+    # Monitor process in background
+    def _monitor():
+        global la_process
+        proc.wait()
+        with la_lock:
+            la_state["capturing"] = False
+            # Check if it exited with error (vs normal SIGTERM from stop)
+            if proc.returncode not in (0, -15, -2):  # 0, SIGTERM, SIGINT
+                stderr = proc.stderr.read().decode(errors="replace").strip()
+                la_state["error"] = stderr or f"Exit code {proc.returncode}"
+            snapshot = dict(la_state)
+        la_process = None
+        broadcast_sse("logic_analyzer", snapshot)
+        print(f"Logic Analyzer: capture stopped (exit={proc.returncode})")
+
+    threading.Thread(target=_monitor, daemon=True).start()
+
+    return jsonify({"status": "ok", "file": capture_file,
+                    "sample_rate": sample_rate})
+
+
+@app.route("/api/logic-analyzer/stop", methods=["POST"])
+def la_stop():
+    """Stop a running capture."""
+    global la_process
+    if la_process is None:
+        return jsonify({"status": "error", "error": "No capture running"}), 404
+
+    la_process.terminate()
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/logic-analyzer/captures")
+def la_captures():
+    """List available capture files."""
+    files = sorted(CAPTURE_DIR.glob("capture_*.sr"), reverse=True)
+    result = []
+    for f in files[:20]:
+        stat = f.stat()
+        result.append({
+            "name": f.name,
+            "size_kb": round(stat.st_size / 1024, 1),
+            "created": datetime.fromtimestamp(
+                stat.st_mtime, tz=timezone.utc).isoformat(),
+        })
+    return jsonify(result)
+
+
+@app.route("/api/logic-analyzer/captures/<filename>")
+def la_download(filename):
+    """Download a capture file."""
+    # Sanitize filename to prevent path traversal
+    safe_name = Path(filename).name
+    filepath = CAPTURE_DIR / safe_name
+    if not filepath.exists():
+        return jsonify({"error": "Not found"}), 404
+    return send_file(filepath, as_attachment=True)
+
+
 @app.route("/api/history")
 def history():
     """Return recent power history for initial chart load."""
@@ -651,6 +813,18 @@ def main():
         print(f"Driver: monitoring {SYSFS_BASE}")
     else:
         print(f"Driver: {SYSFS_BASE} not found (module not loaded?)")
+
+    # Start logic analyzer detection
+    t = threading.Thread(target=la_detect_thread, daemon=True, args=(stop_event,))
+    t.start()
+    initial_la = _detect_fx2()
+    if initial_la:
+        with la_lock:
+            la_state["available"] = True
+            la_state["device"] = initial_la
+        print(f"Logic Analyzer: {initial_la} detected")
+    else:
+        print("Logic Analyzer: no FX2 device found (will keep checking)")
 
     print(f"Logging to: {out_path}")
     print(f"ESP32 target: {esp32_host}:{esp32_port}")

@@ -333,6 +333,52 @@
     </div>
 
     <div class="panel" style="margin-top:16px">
+      <h2>Logic Analyzer <span class="driver-indicator" id="laDot" title="No device"></span></h2>
+      <div id="laContent">
+        <div class="stat-label" style="margin-bottom:8px">
+          Device: <span id="laDevice" style="color:var(--text)">scanning...</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <div style="flex:1">
+            <label class="stat-label" for="laSampleRate">Sample Rate</label>
+            <select id="laSampleRate"
+                    style="width:100%; padding:6px; background:var(--bg); color:var(--text);
+                           border:1px solid var(--border); border-radius:4px; font-family:inherit; font-size:13px;">
+              <option value="200k">200 kHz</option>
+              <option value="500k">500 kHz</option>
+              <option value="1m" selected>1 MHz</option>
+              <option value="2m">2 MHz</option>
+              <option value="4m">4 MHz</option>
+              <option value="8m">8 MHz</option>
+            </select>
+          </div>
+        </div>
+        <button class="trigger-btn" id="laBtn" onclick="toggleCapture()" disabled
+                style="background:var(--green)">
+          START CAPTURE
+        </button>
+        <div id="laStatus" style="margin-top:8px; display:none;">
+          <div class="stat-label">
+            Capturing since: <span id="laStarted" style="color:var(--text)">--</span>
+          </div>
+          <div class="stat-label" style="margin-top:4px">
+            File: <span id="laFile" style="color:var(--text); word-break:break-all">--</span>
+          </div>
+        </div>
+        <div id="laError" style="margin-top:8px; color:var(--red); font-size:11px; display:none;"></div>
+        <div id="laCaptures" style="margin-top:12px;">
+          <div class="stat-label" style="margin-bottom:6px">Captures</div>
+          <div id="laCaptureList" class="rtt-history" style="max-height:100px;">
+            <table>
+              <thead><tr><th>File</th><th>Size</th><th></th></tr></thead>
+              <tbody id="laCaptureBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
       <h2>Wake RTT</h2>
       <div class="rtt-grid">
         <div class="rtt-stat">
@@ -684,6 +730,119 @@ function updateDriver(d) {
   }
 }
 
+// ── Logic Analyzer ──────────────────────────────────────────────────────
+
+let laCapturing = false;
+
+function updateLogicAnalyzer(d) {
+  const dot = document.getElementById('laDot');
+  const device = document.getElementById('laDevice');
+  const btn = document.getElementById('laBtn');
+  const status = document.getElementById('laStatus');
+  const errorEl = document.getElementById('laError');
+
+  if (!d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = 'No device detected';
+    device.textContent = 'not connected';
+    btn.disabled = true;
+    return;
+  }
+
+  device.textContent = d.device || 'fx2lafw';
+
+  if (d.capturing) {
+    laCapturing = true;
+    dot.className = 'driver-indicator active';
+    dot.title = 'Capturing';
+    btn.disabled = false;
+    btn.textContent = 'STOP CAPTURE';
+    btn.style.background = 'var(--red)';
+    status.style.display = 'block';
+
+    if (d.started_at) {
+      const t = new Date(d.started_at).toLocaleTimeString([], { hour12: false });
+      document.getElementById('laStarted').textContent = t;
+    }
+    if (d.file) {
+      const parts = d.file.split('/');
+      document.getElementById('laFile').textContent = parts[parts.length - 1];
+    }
+  } else {
+    laCapturing = false;
+    dot.className = 'driver-indicator';
+    dot.title = 'Idle';
+    btn.disabled = false;
+    btn.textContent = 'START CAPTURE';
+    btn.style.background = 'var(--green)';
+    status.style.display = 'none';
+  }
+
+  if (d.error) {
+    errorEl.textContent = d.error;
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+  }
+}
+
+async function toggleCapture() {
+  const btn = document.getElementById('laBtn');
+  btn.disabled = true;
+
+  if (laCapturing) {
+    btn.textContent = 'STOPPING...';
+    try {
+      await fetch('/api/logic-analyzer/stop', { method: 'POST' });
+      // SSE will update the UI
+      setTimeout(loadCaptures, 1000);
+    } catch (e) {
+      btn.textContent = 'STOP CAPTURE';
+      btn.disabled = false;
+    }
+    return;
+  }
+
+  const sampleRate = document.getElementById('laSampleRate').value;
+  btn.textContent = 'STARTING...';
+
+  try {
+    const resp = await fetch('/api/logic-analyzer/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sample_rate: sampleRate }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') {
+      document.getElementById('laError').textContent = data.error || 'Failed';
+      document.getElementById('laError').style.display = 'block';
+      btn.textContent = 'START CAPTURE';
+      btn.disabled = false;
+    }
+    // SSE will update the UI on success
+  } catch (e) {
+    btn.textContent = 'START CAPTURE';
+    btn.disabled = false;
+  }
+}
+
+async function loadCaptures() {
+  try {
+    const captures = await fetch('/api/logic-analyzer/captures').then(r => r.json());
+    const tbody = document.getElementById('laCaptureBody');
+    tbody.innerHTML = '';
+    for (const c of captures) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:10px">${c.name}</td>
+        <td>${c.size_kb} KB</td>
+        <td><a href="/api/logic-analyzer/captures/${c.name}" style="color:var(--accent)">dl</a></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch (e) {}
+}
+
 // ── SSE connection ───────────────────────────────────────────────────────
 
 let evtSource = null;
@@ -720,6 +879,10 @@ function connectSSE() {
 
   evtSource.addEventListener('burst', (e) => {
     updateBurst(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('logic_analyzer', (e) => {
+    updateLogicAnalyzer(JSON.parse(e.data));
   });
 
   evtSource.addEventListener('esp32_ip', (e) => {
@@ -775,6 +938,13 @@ async function init() {
   try {
     const burst = await fetch('/api/burst').then(r => r.json());
     updateBurst(burst);
+  } catch (e) {}
+
+  // Load logic analyzer state
+  try {
+    const la = await fetch('/api/logic-analyzer').then(r => r.json());
+    updateLogicAnalyzer(la);
+    loadCaptures();
   } catch (e) {}
 
   connectSSE();

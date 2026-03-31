@@ -39,7 +39,8 @@ fi
 echo "[3/6] Installing system packages..."
 sudo apt-get update -qq
 sudo apt-get install -y -qq i2c-tools python3-pip python3-venv \
-    raspberrypi-kernel-headers device-tree-compiler
+    raspberrypi-kernel-headers device-tree-compiler \
+    sigrok sigrok-firmware-fx2lafw
 
 # ── Build kernel module ───────────────────────────────────────────────────
 DRIVER_DIR="$SCRIPT_DIR/driver"
