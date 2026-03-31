@@ -244,6 +244,8 @@ rpi_timestamp,type,esp_timestamp_us,state,voltage_mv,current_ua,power_uw
 
 ## DTIM Wake Strategy Results
 
+![Burst test with kernel driver wake detection and RTT measurement](docs/driver_burst_dashboard.gif)
+
 ![DTIM power save dashboard — 15mA idle with UDP wake trigger](docs/dtim_dashboard.gif)
 
 The DTIM strategy keeps the ESP32-S3 associated with the AP using 802.11 power save mode. The radio wakes every 10th DTIM beacon (~1s), draws ~15 mA average on the dev board, and responds to a UDP trigger in under 1 second.
