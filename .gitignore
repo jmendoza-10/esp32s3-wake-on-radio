@@ -6,5 +6,6 @@ managed_components/
 dependencies.lock
 rpi/.venv/
 rpi/power_log.csv
+rpi/ina219_calibration.json
 __pycache__/
 *.pyc
