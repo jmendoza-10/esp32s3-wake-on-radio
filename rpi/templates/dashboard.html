@@ -101,6 +101,17 @@
   .trigger-btn:hover { opacity: 0.85; }
   .trigger-btn:active { opacity: 0.7; }
   .trigger-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .small-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
   .trigger-info {
     font-size: 11px;
     color: var(--muted);
@@ -190,6 +201,99 @@
     padding: 8px;
   }
   .driver-stat .stat-value { font-size: 20px; }
+  .ina-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .ina-panel-header h2 {
+    margin-bottom: 0;
+  }
+  .ina-panel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .ina-panel-actions .small-btn {
+    min-width: 72px;
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 5px;
+    line-height: 1;
+  }
+  .ina-channel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .ina-channel-row {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 12px;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .ina-channel-row.highspeed .ina-channel-panel {
+    border-color: var(--accent);
+  }
+  .ina-channel-panel {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+  }
+  .ina-channel-chart {
+    position: relative;
+    height: 190px;
+    min-width: 0;
+  }
+  .ina-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ina-input-row input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .ina-button-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .ina-button-row .trigger-btn {
+    margin-bottom: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+  .ina-mode-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .ina-mode-badge.highspeed {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
   .driver-indicator {
     display: inline-block;
     width: 12px; height: 12px;
@@ -215,6 +319,7 @@
   @media (max-width: 800px) {
     .grid { grid-template-columns: 1fr; }
     .stats { flex-wrap: wrap; }
+    .ina-channel-row { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -231,7 +336,7 @@
     <div><span class="stat-value" id="statCurrent">--</span> <span class="stat-unit">mA</span></div>
   </div>
   <div class="stat">
-    <div class="stat-label">Avg (2s)</div>
+    <div class="stat-label">3s Window Avg</div>
     <div><span class="stat-value" id="statAvgCurrent">--</span> <span class="stat-unit">mA</span></div>
   </div>
   <div class="stat">
@@ -251,10 +356,25 @@
 <div class="grid">
   <div>
     <div class="panel">
-      <h2>Current Draw (mA)</h2>
-      <div class="chart-wrap">
-        <canvas id="powerChart"></canvas>
+      <div class="ina-panel-header">
+        <h2>Waveshare HAT <span class="driver-indicator" id="inaDot" title="Checking HAT"></span></h2>
+        <div class="ina-panel-actions">
+          <button class="small-btn" id="inaBtn" onclick="reconfigureInaAll()" style="background:var(--accent)">
+            CAL ALL
+          </button>
+          <button class="small-btn" id="inaPauseAllBtn" onclick="toggleInaPauseAll()" style="background:var(--accent)">
+            PAUSE ALL
+          </button>
+          <button class="small-btn" id="inaExportBtn" onclick="exportInaHighspeedCsv()" style="background:var(--accent)">
+            EXPORT CSV
+          </button>
+        </div>
       </div>
+      <div class="stat-label">
+        High-speed channels: <span id="inaRange" style="color:var(--text)">--</span>
+      </div>
+      <div class="ina-channel-list" id="inaChannels"></div>
+      <div class="trigger-info" id="inaMessage">--</div>
     </div>
 
     <div class="panel" style="margin-top:16px">
@@ -418,73 +538,6 @@
 </div>
 
 <script>
-// ── Chart setup ──────────────────────────────────────────────────────────
-
-const MAX_POINTS = 600;
-const chartData = {
-  labels: [],
-  datasets: [{
-    label: 'Current (mA)',
-    data: [],
-    borderColor: '#5b8def',
-    backgroundColor: 'rgba(91, 141, 239, 0.1)',
-    borderWidth: 1.5,
-    pointRadius: 0,
-    fill: true,
-    tension: 0.2,
-  }]
-};
-
-const chart = new Chart(document.getElementById('powerChart'), {
-  type: 'line',
-  data: chartData,
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false,
-    interaction: { intersect: false, mode: 'nearest' },
-    scales: {
-      x: {
-        display: true,
-        ticks: { color: '#7a7f8d', maxTicksLimit: 8, font: { size: 10 } },
-        grid: { color: '#2a2d3a' },
-      },
-      y: {
-        display: true,
-        beginAtZero: true,
-        ticks: { color: '#7a7f8d', font: { size: 10 } },
-        grid: { color: '#2a2d3a' },
-      }
-    },
-    plugins: {
-      legend: { display: false },
-    }
-  }
-});
-
-function addPowerPoint(ts, current_ua) {
-  const mA = current_ua / 1000;
-  const date = new Date(ts * 1000);
-  const label = date.toLocaleTimeString([], { hour12: false });
-
-  chartData.labels.push(label);
-  chartData.datasets[0].data.push(mA);
-
-  if (chartData.labels.length > MAX_POINTS) {
-    chartData.labels.shift();
-    chartData.datasets[0].data.shift();
-  }
-}
-
-// Batch chart updates to avoid excessive redraws
-let chartDirty = false;
-setInterval(() => {
-  if (chartDirty) {
-    chart.update();
-    chartDirty = false;
-  }
-}, 200);
-
 // ── Live stats ───────────────────────────────────────────────────────────
 
 function updateStats(data) {
@@ -492,7 +545,9 @@ function updateStats(data) {
   document.getElementById('statVoltage').textContent = data.voltage_mv.toFixed(0);
   document.getElementById('statPower').textContent = (data.power_uw / 1000).toFixed(1);
 
-  if (data.avg_current_ua != null) {
+  if (data.window_avg_current_ua != null) {
+    document.getElementById('statAvgCurrent').textContent = (data.window_avg_current_ua / 1000).toFixed(1);
+  } else if (data.avg_current_ua != null) {
     document.getElementById('statAvgCurrent').textContent = (data.avg_current_ua / 1000).toFixed(1);
   }
 }
@@ -684,6 +739,503 @@ function loadRttHistory(data) {
   }
 }
 
+// ── Waveshare / INA219 status ────────────────────────────────────────────
+
+let inaActiveChannel = null;
+let inaHighspeedChannels = [];
+const INA_CHANNELS = [1, 2, 3, 4];
+const INA_MAX_POINTS = 5000;
+const inaCharts = {};
+const inaChartData = {};
+const inaSampleBuffers = {};
+const inaPaused = {};
+let inaAllPaused = false;
+
+function formatMaybe(value, decimals) {
+  return value == null || Number.isNaN(Number(value)) ? '--' : Number(value).toFixed(decimals);
+}
+
+function inaChannelCard(channel) {
+  return `
+    <div class="ina-channel-row" id="inaCh${channel}Row">
+      <div class="ina-channel-panel" id="inaCh${channel}Card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px">
+          <div style="font-weight:700">CH${channel}</div>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="ina-mode-badge" id="inaCh${channel}Mode">LOW SPEED</span>
+            <span class="driver-indicator unavailable" id="inaCh${channel}Dot" title="Channel unavailable"></span>
+          </div>
+        </div>
+        <label class="stat-label" style="display:flex; align-items:center; gap:8px; margin-bottom:10px">
+          <input id="inaCh${channel}HighSpeed" type="checkbox" onchange="setInaHighspeedFromUi()">
+          High Speed Sampling
+        </label>
+        <div class="driver-grid">
+          <div class="driver-stat">
+            <div class="stat-label">Voltage</div>
+            <div class="stat-value" id="inaCh${channel}Voltage">--</div>
+            <div class="stat-unit">mV</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">Current</div>
+            <div class="stat-value" id="inaCh${channel}Current">--</div>
+            <div class="stat-unit">mA</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">Power</div>
+            <div class="stat-value" id="inaCh${channel}Power">--</div>
+            <div class="stat-unit">mW</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">Calibration</div>
+            <div class="stat-value" id="inaCh${channel}Cal" style="font-size:16px">--</div>
+          </div>
+        </div>
+        <div class="stat-label" id="inaCh${channel}Meta" style="margin-top:8px; line-height:1.4">--</div>
+        <div class="ina-input-row">
+          <label class="stat-label">Shunt ohm
+            <input id="inaCh${channel}Shunt" type="number" step="0.001" min="0.001" value="0.1">
+          </label>
+          <label class="stat-label">Max A
+            <input id="inaCh${channel}MaxCurrent" type="number" step="0.1" min="0.1" value="3.0">
+          </label>
+        </div>
+        <div class="ina-button-row">
+          <button class="trigger-btn" id="inaCh${channel}Btn" onclick="reconfigureIna(${channel})" style="background:var(--accent)">
+            CAL CH${channel}
+          </button>
+          <button class="trigger-btn" id="inaCh${channel}PauseBtn" onclick="toggleInaPause(${channel})" style="background:var(--accent)">
+            PAUSE
+          </button>
+        </div>
+      </div>
+      <div class="ina-channel-chart">
+        <canvas id="inaCh${channel}Chart"></canvas>
+      </div>
+    </div>
+  `;
+}
+
+function initInaPanel() {
+  const container = document.getElementById('inaChannels');
+  container.innerHTML = INA_CHANNELS.map(inaChannelCard).join('');
+  for (const channel of INA_CHANNELS) {
+    initInaChart(channel);
+  }
+}
+
+function initInaChart(channel) {
+  inaPaused[channel] = false;
+  inaSampleBuffers[channel] = [];
+  inaChartData[channel] = {
+    labels: [],
+    datasets: [
+      {
+        label: `CH${channel} Current (mA)`,
+        data: [],
+        borderColor: '#5b8def',
+        backgroundColor: 'rgba(91, 141, 239, 0.1)',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+      {
+        label: `CH${channel} 3s Avg (mA)`,
+        data: [],
+        borderColor: '#ff9800',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+    ],
+  };
+  inaCharts[channel] = new Chart(document.getElementById(`inaCh${channel}Chart`), {
+    type: 'line',
+    data: inaChartData[channel],
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { intersect: false, mode: 'nearest' },
+      scales: {
+        x: {
+          display: true,
+          ticks: { color: '#7a7f8d', maxTicksLimit: 6, font: { size: 10 } },
+          grid: { color: '#2a2d3a' },
+        },
+        y: {
+          display: true,
+          beginAtZero: true,
+          ticks: { color: '#7a7f8d', font: { size: 10 } },
+          grid: { color: '#2a2d3a' },
+        },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+}
+
+function addInaChartPoint(d, redraw = true) {
+  if (!d || d.available === false || d.channel == null || d.current_ua == null) return;
+  const channel = Number(d.channel);
+  if (inaPaused[channel]) return;
+  const chartData = inaChartData[channel];
+  const chart = inaCharts[channel];
+  if (!chartData || !chart) return;
+  const ts = d.ts != null ? Number(d.ts) * 1000 : Date.now();
+  const label = new Date(ts).toISOString().slice(11, 23);
+  const sampleHighspeedChannels = Array.isArray(d.highspeed_channels)
+    ? d.highspeed_channels.map(Number)
+    : inaHighspeedChannels;
+  const sampleMode = sampleHighspeedChannels.includes(channel) ? 'highspeed' : 'low';
+  chartData.labels.push(label);
+  chartData.datasets[0].data.push(Number(d.current_ua) / 1000);
+  chartData.datasets[1].data.push(
+    d.window_avg_current_ua != null ? Number(d.window_avg_current_ua) / 1000 : null
+  );
+  inaSampleBuffers[channel].push({
+    channel,
+    sample_mode: sampleMode,
+    epoch_s: Number(ts / 1000).toFixed(6),
+    iso_time: new Date(ts).toISOString(),
+    voltage_mv: d.voltage_mv != null ? Number(d.voltage_mv).toFixed(1) : '',
+    current_ua: Number(d.current_ua).toFixed(1),
+    current_ma: (Number(d.current_ua) / 1000).toFixed(6),
+    power_uw: d.power_uw != null ? Number(d.power_uw).toFixed(1) : '',
+    power_mw: d.power_uw != null ? (Number(d.power_uw) / 1000).toFixed(6) : '',
+    window_avg_current_ua: d.window_avg_current_ua != null ? Number(d.window_avg_current_ua).toFixed(1) : '',
+    window_avg_current_ma: d.window_avg_current_ua != null ? (Number(d.window_avg_current_ua) / 1000).toFixed(6) : '',
+    avg_window_s: d.avg_window_s != null ? Number(d.avg_window_s).toFixed(1) : '',
+  });
+  if (chartData.labels.length > INA_MAX_POINTS) {
+    chartData.labels.shift();
+    chartData.datasets[0].data.shift();
+    chartData.datasets[1].data.shift();
+    inaSampleBuffers[channel].shift();
+  }
+  if (redraw) chart.update();
+}
+
+function csvCell(value) {
+  if (value == null) return '';
+  const text = String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function exportInaHighspeedCsv() {
+  const message = document.getElementById('inaMessage');
+  const channels = (inaHighspeedChannels || [])
+    .map(Number)
+    .filter(channel => inaSampleBuffers[channel] && inaSampleBuffers[channel].length > 0);
+  const columns = [
+    'channel',
+    'sample_mode',
+    'iso_time',
+    'epoch_s',
+    'voltage_mv',
+    'current_ua',
+    'current_ma',
+    'power_uw',
+    'power_mw',
+    'window_avg_current_ua',
+    'window_avg_current_ma',
+    'avg_window_s',
+  ];
+  const samples = [];
+  for (const channel of channels) {
+    for (const sample of inaSampleBuffers[channel]) {
+      if (sample.sample_mode === 'highspeed') samples.push(sample);
+    }
+  }
+  samples.sort((a, b) => Number(a.epoch_s) - Number(b.epoch_s) || a.channel - b.channel);
+  if (samples.length === 0) {
+    message.textContent = 'no high-speed samples to export';
+    return;
+  }
+
+  const rows = [columns.join(',')];
+  for (const sample of samples) {
+    rows.push(columns.map(column => csvCell(sample[column])).join(','));
+  }
+  const csv = `${rows.join('\n')}\n`;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const channelLabel = [...new Set(samples.map(sample => `ch${sample.channel}`))].join('-');
+  link.href = url;
+  link.download = `ina219-highspeed-${channelLabel}-${stamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  message.textContent = `exported ${samples.length} high-speed samples`;
+}
+
+function toggleInaPause(channel) {
+  setInaPause(channel, !inaPaused[channel]);
+}
+
+function setInaPause(channel, paused) {
+  const btn = document.getElementById(`inaCh${channel}PauseBtn`);
+  inaPaused[channel] = paused;
+  if (paused) {
+    btn.textContent = 'RESUME';
+    btn.style.background = 'var(--green)';
+  } else {
+    btn.textContent = 'PAUSE';
+    btn.style.background = 'var(--accent)';
+  }
+}
+
+function toggleInaPauseAll() {
+  inaAllPaused = !inaAllPaused;
+  for (const channel of INA_CHANNELS) {
+    setInaPause(channel, inaAllPaused);
+  }
+  const btn = document.getElementById('inaPauseAllBtn');
+  btn.textContent = inaAllPaused ? 'RESUME ALL' : 'PAUSE ALL';
+  btn.style.background = inaAllPaused ? 'var(--green)' : 'var(--accent)';
+}
+
+async function setInaHighspeedFromUi() {
+  const message = document.getElementById('inaMessage');
+  const selected = INA_CHANNELS.filter(channel => {
+    const checkbox = document.getElementById(`inaCh${channel}HighSpeed`);
+    return checkbox && checkbox.checked;
+  });
+  if (selected.length === 0) {
+    message.textContent = 'select at least one high-speed channel';
+    updateInaHighspeedInputs();
+    return;
+  }
+  try {
+    const resp = await fetch('/api/ina219/highspeed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channels: selected }),
+    });
+    const data = await resp.json();
+    updateIna(data);
+    message.textContent = data.status === 'ok' ? `high-speed ${selected.map(ch => `CH${ch}`).join(', ')}` : (data.error || 'failed');
+  } catch (e) {
+    message.textContent = 'high-speed update failed';
+    updateInaHighspeedInputs();
+  }
+}
+
+function updateInaHighspeedInputs() {
+  const selected = new Set((inaHighspeedChannels || []).map(Number));
+  for (const channel of INA_CHANNELS) {
+    const checkbox = document.getElementById(`inaCh${channel}HighSpeed`);
+    const mode = document.getElementById(`inaCh${channel}Mode`);
+    const row = document.getElementById(`inaCh${channel}Row`);
+    const highspeed = selected.has(channel);
+    if (checkbox) {
+      checkbox.checked = highspeed;
+    }
+    if (mode) {
+      mode.textContent = highspeed ? 'HIGH SPEED' : 'LOW SPEED';
+      mode.className = 'ina-mode-badge' + (highspeed ? ' highspeed' : '');
+    }
+    if (row) {
+      row.classList.toggle('highspeed', highspeed);
+    }
+  }
+}
+
+function updateInaPower(d) {
+  if (!d) return;
+  const channel = d.channel || inaActiveChannel || 1;
+  const voltage = document.getElementById(`inaCh${channel}Voltage`);
+  const current = document.getElementById(`inaCh${channel}Current`);
+  const power = document.getElementById(`inaCh${channel}Power`);
+  if (d.voltage_mv != null) {
+    if (voltage) voltage.textContent = Number(d.voltage_mv).toFixed(0);
+  }
+  if (d.current_ua != null) {
+    if (current) current.textContent = (Number(d.current_ua) / 1000).toFixed(1);
+  }
+  if (d.power_uw != null) {
+    if (power) power.textContent = (Number(d.power_uw) / 1000).toFixed(1);
+  }
+}
+
+function normalizeInaPayload(d) {
+  if (!d) return { available: false, channels: [] };
+  if (Array.isArray(d.channels)) return d;
+  if (d.channel != null) {
+    return {
+      available: d.available,
+      active_channel: d.channel,
+      channels: [d],
+      error: d.error,
+    };
+  }
+  return { available: false, channels: [], error: d.error };
+}
+
+function updateInaChannel(d) {
+  const channel = d.channel;
+  const dot = document.getElementById(`inaCh${channel}Dot`);
+  const cal = document.getElementById(`inaCh${channel}Cal`);
+  const meta = document.getElementById(`inaCh${channel}Meta`);
+  if (!dot || !cal || !meta) return;
+
+  if (!d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = d.error || 'Channel unavailable';
+    cal.textContent = 'OFF';
+    cal.style.color = 'var(--red)';
+    meta.textContent = d.error || '--';
+    return;
+  }
+
+  updateInaPower(d);
+  if (!inaHighspeedChannels.includes(Number(channel))) {
+    addInaChartPoint(d);
+  }
+  dot.className = 'driver-indicator' + (d.calibrated ? ' active' : ' unavailable');
+  dot.title = d.calibrated ? 'Calibrated' : 'Calibration register is zero';
+  cal.textContent = d.calibrated ? 'OK' : 'LOST';
+  cal.style.color = d.calibrated ? 'var(--green)' : 'var(--red)';
+
+  const address = d.address || '0x??';
+  const shunt = d.shunt_ohms != null ? `${Number(d.shunt_ohms).toFixed(4)} ohm` : '? ohm';
+  const shuntRange = d.shunt_range_a != null ? `+/-${Number(d.shunt_range_a).toFixed(1)} A` : '+/-? A';
+  const lsb = d.current_lsb_ua != null ? `${Number(d.current_lsb_ua).toFixed(1)} uA/bit` : '--';
+  const max = d.max_current_a != null ? `${Number(d.max_current_a).toFixed(1)} A max` : '? A max';
+  const calHex = d.calibration != null ? `0x${Number(d.calibration).toString(16).padStart(4, '0')}` : '--';
+  const warn = d.overrange_expected ? ' overrange risk' : '';
+  meta.textContent = `${address} ${shunt} ${shuntRange} ${max} ${lsb} cal ${calHex}${warn}`;
+
+  const shuntInput = document.getElementById(`inaCh${channel}Shunt`);
+  const maxInput = document.getElementById(`inaCh${channel}MaxCurrent`);
+  if (shuntInput && document.activeElement !== shuntInput && d.shunt_ohms != null) {
+    shuntInput.value = Number(d.shunt_ohms).toString();
+  }
+  if (maxInput && document.activeElement !== maxInput && d.max_current_a != null) {
+    maxInput.value = Number(d.max_current_a).toString();
+  }
+}
+
+function updateIna(raw) {
+  const d = normalizeInaPayload(raw);
+  const dot = document.getElementById('inaDot');
+  const range = document.getElementById('inaRange');
+  const message = document.getElementById('inaMessage');
+  const channels = d.channels || [];
+  const byChannel = new Map(channels.map(ch => [Number(ch.channel), ch]));
+  inaActiveChannel = d.active_channel || inaActiveChannel || (channels[0] && channels[0].channel);
+  inaHighspeedChannels = Array.isArray(d.highspeed_channels) ? d.highspeed_channels.map(Number) : inaHighspeedChannels;
+  updateInaHighspeedInputs();
+
+  if (!d || !d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = d && d.error ? d.error : 'HAT unavailable';
+    range.textContent = '--';
+    message.textContent = d && d.error ? d.error : '--';
+    for (const channel of INA_CHANNELS) {
+      updateInaChannel({ available: false, channel, error: d && d.error ? d.error : 'disabled' });
+    }
+    return;
+  }
+
+  const anyLost = channels.some(ch => ch.available && !ch.calibrated);
+  dot.className = 'driver-indicator' + (anyLost ? ' unavailable' : ' active');
+  dot.title = anyLost ? 'At least one calibration register is zero' : 'Configured channels calibrated';
+  const highspeedLabel = inaHighspeedChannels.length
+    ? inaHighspeedChannels.map(ch => `CH${ch}`).join(', ')
+    : '--';
+  range.textContent = highspeedLabel;
+  for (const channel of INA_CHANNELS) {
+    updateInaChannel(byChannel.get(channel) || { available: false, channel, error: 'disabled' });
+  }
+  const configured = channels.map(ch => `CH${ch.channel}`).join(', ');
+  message.textContent = configured ? `configured ${configured}` : '--';
+}
+
+async function loadInaStatus(force = false) {
+  try {
+    const resp = await fetch('/api/ina219');
+    const data = await resp.json();
+    updateIna(data);
+  } catch (e) {
+    updateIna({ available: false, error: 'status unavailable' });
+  }
+}
+
+async function reconfigureIna(channel) {
+  const btn = document.getElementById(`inaCh${channel}Btn`);
+  const message = document.getElementById('inaMessage');
+  const payload = readInaCalibrationInput(channel);
+  if (!payload) return;
+  btn.disabled = true;
+  btn.textContent = 'CAL...';
+  try {
+    const resp = await fetch(`/api/ina219/${channel}/reconfigure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    await loadInaStatus(true);
+    message.textContent = data.status === 'ok' ? 'reconfigured' : (data.error || 'failed');
+  } catch (e) {
+    updateIna({ available: false, error: 'reconfigure failed' });
+  }
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = `CAL CH${channel}`;
+  }, 1000);
+}
+
+function readInaCalibrationInput(channel) {
+  const message = document.getElementById('inaMessage');
+  const shunt = Number(document.getElementById(`inaCh${channel}Shunt`).value);
+  const maxCurrent = Number(document.getElementById(`inaCh${channel}MaxCurrent`).value);
+  if (!Number.isFinite(shunt) || shunt <= 0) {
+    message.textContent = `CH${channel} invalid shunt`;
+    return null;
+  }
+  if (!Number.isFinite(maxCurrent) || maxCurrent <= 0) {
+    message.textContent = `CH${channel} invalid max current`;
+    return null;
+  }
+  return { shunt_ohms: shunt, max_current_a: maxCurrent };
+}
+
+async function reconfigureInaAll() {
+  const btn = document.getElementById('inaBtn');
+  const message = document.getElementById('inaMessage');
+  const channels = {};
+  for (const channel of INA_CHANNELS) {
+    const payload = readInaCalibrationInput(channel);
+    if (!payload) return;
+    channels[channel] = payload;
+  }
+  btn.disabled = true;
+  btn.textContent = 'RECONFIGURING...';
+  try {
+    const resp = await fetch('/api/ina219/reconfigure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channels }),
+    });
+    const data = await resp.json();
+    updateIna(data);
+    message.textContent = data.status === 'ok' ? 'all reconfigured' : (data.error || 'failed');
+  } catch (e) {
+    updateIna({ available: false, error: 'reconfigure failed' });
+  }
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'CAL ALL';
+  }, 1000);
+}
+
 // ── Driver status ────────────────────────────────────────────────────────
 
 function updateDriver(d) {
@@ -852,9 +1404,24 @@ function connectSSE() {
 
   evtSource.addEventListener('power', (e) => {
     const d = JSON.parse(e.data);
-    addPowerPoint(d.ts, d.current_ua);
-    chartDirty = true;
-    updateStats(d);
+    const samples = Array.isArray(d.samples) ? d.samples : [d];
+    const touchedInaCharts = new Set();
+    for (const p of samples) {
+      const point = {
+        ...p,
+        highspeed_channels: p.highspeed_channels || d.highspeed_channels,
+        avg_window_s: p.avg_window_s || d.avg_window_s,
+      };
+      addInaChartPoint(point, false);
+      if (point.channel != null) touchedInaCharts.add(Number(point.channel));
+    }
+    for (const channel of touchedInaCharts) {
+      if (inaCharts[channel]) inaCharts[channel].update();
+    }
+    if (Number(d.channel) === Number(inaActiveChannel)) {
+      updateStats(d);
+    }
+    updateInaPower(d);
   });
 
   evtSource.addEventListener('state', (e) => {
@@ -890,6 +1457,10 @@ function connectSSE() {
     document.getElementById('triggerTarget').textContent = data.ip + ':{{ esp32_port }}';
   });
 
+  evtSource.addEventListener('ina219', (e) => {
+    updateIna(JSON.parse(e.data));
+  });
+
   evtSource.onopen = () => {
     document.getElementById('statusDot').classList.add('connected');
   };
@@ -904,14 +1475,24 @@ function connectSSE() {
 // ── Init ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  initInaPanel();
+
+  // Load Waveshare HAT state before history so chart filtering knows active/high-speed channels.
+  await loadInaStatus(true);
+
   // Load history
   try {
     const hist = await fetch('/api/history').then(r => r.json());
+    const touchedInaCharts = new Set();
     for (const p of hist) {
-      addPowerPoint(p.ts, p.current_ua);
+      addInaChartPoint(p, false);
+      if (p.channel != null) touchedInaCharts.add(Number(p.channel));
     }
-    chart.update();
-    if (hist.length > 0) updateStats(hist[hist.length - 1]);
+    for (const channel of touchedInaCharts) {
+      if (inaCharts[channel]) inaCharts[channel].update();
+    }
+    const activeHist = hist.filter(p => Number(p.channel) === Number(inaActiveChannel));
+    if (activeHist.length > 0) updateStats(activeHist[activeHist.length - 1]);
   } catch (e) {}
 
   // Load state log
@@ -951,6 +1532,7 @@ async function init() {
 }
 
 init();
+setInterval(loadInaStatus, 5000);
 </script>
 </body>
 </html>

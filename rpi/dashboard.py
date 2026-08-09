@@ -47,18 +47,26 @@ _REG_CURRENT = 0x04
 _REG_CALIBRATION = 0x05
 
 CHANNEL_ADDRS = {1: 0x40, 2: 0x41, 3: 0x42, 4: 0x43}
-SHUNT_RESISTANCE_OHM = 0.1
+DEFAULT_SHUNT_OHMS = 0.1
+DEFAULT_MAX_CURRENT_A = 1.6
+CALIBRATION_CONFIG_PATH = Path("ina219_calibration.json")
 
 
 class INA219:
     """Minimal INA219 driver for the Waveshare Current/Power Monitor HAT."""
 
-    def __init__(self, bus_num=1, address=0x40, shunt_ohms=0.1, max_current_a=0.4):
+    def __init__(self, bus_num=1, address=0x40, shunt_ohms=0.1,
+                 max_current_a=1.6, channel=None):
         import smbus2
         self.bus = smbus2.SMBus(bus_num)
         self.addr = address
+        self.channel = channel
         self.shunt_ohms = shunt_ohms
         self._configure(max_current_a)
+        self._last_voltage_mv = 0.0
+        self._last_current_ua = 0.0
+        self._last_power_uw = 0.0
+        self._sample_count = 0
 
     def _write_register(self, reg, value):
         buf = [(value >> 8) & 0xFF, value & 0xFF]
@@ -75,23 +83,94 @@ class INA219:
         return raw
 
     def _configure(self, max_current_a):
+        if max_current_a <= 0:
+            raise ValueError("max_current_a must be positive")
+        if self.shunt_ohms <= 0:
+            raise ValueError("shunt_ohms must be positive")
+
+        target_shunt_v = max_current_a * self.shunt_ohms
+        pga_choices = (
+            (0b00, 0.040),
+            (0b01, 0.080),
+            (0b10, 0.160),
+            (0b11, 0.320),
+        )
+        pga_bits, self.shunt_range_v = pga_choices[-1]
+        for candidate_bits, shunt_range_v in pga_choices:
+            if target_shunt_v <= shunt_range_v:
+                pga_bits = candidate_bits
+                self.shunt_range_v = shunt_range_v
+                break
+
+        self.shunt_range_a = self.shunt_range_v / self.shunt_ohms
+        self.overrange_expected = target_shunt_v > self.shunt_range_v
+
+        self.max_current_a = max_current_a
         config = (
             (0 << 13)
-            | (0b00 << 11)
-            | (0b0011 << 7)
-            | (0b0011 << 3)
+            | (pga_bits << 11)
+            | (0b0000 << 7)
+            | (0b0000 << 3)
             | 0b111
         )
         self._write_register(_REG_CONFIG, config)
-        self.current_lsb_a = max_current_a / 32768.0
-        cal = int(0.04096 / (self.current_lsb_a * self.shunt_ohms))
-        self._write_register(_REG_CALIBRATION, cal)
+        requested_lsb_a = max_current_a / 32768.0
+        min_lsb_for_cal_a = 0.04096 / (65535 * self.shunt_ohms)
+        self.current_lsb_a = max(requested_lsb_a, min_lsb_for_cal_a)
+        self.calibration = int(0.04096 / (self.current_lsb_a * self.shunt_ohms))
+        self._write_register(_REG_CALIBRATION, self.calibration)
+
+    def configure(self, shunt_ohms=None, max_current_a=None):
+        if shunt_ohms is not None:
+            shunt_ohms = float(shunt_ohms)
+            if shunt_ohms <= 0:
+                raise ValueError("shunt_ohms must be positive")
+            self.shunt_ohms = shunt_ohms
+        if max_current_a is None:
+            max_current_a = self.max_current_a
+        max_current_a = float(max_current_a)
+        self._configure(max_current_a)
 
     def read_all(self):
-        voltage_mv = ((self._read_register(_REG_BUS_VOLTAGE) >> 3) & 0x1FFF) * 4.0
+        self._sample_count += 1
+        if self._sample_count == 1 or self._sample_count % 100 == 0:
+            self._last_voltage_mv = ((self._read_register(_REG_BUS_VOLTAGE) >> 3) & 0x1FFF) * 4.0
+            if self._read_register(_REG_CALIBRATION) == 0:
+                label = f"CH{self.channel}" if self.channel is not None else f"0x{self.addr:02x}"
+                print(f"INA219 {label} calibration register cleared; reconfiguring", flush=True)
+                self._configure(self.max_current_a)
+        voltage_mv = self._last_voltage_mv
         current_ua = self._read_register_signed(_REG_CURRENT) * self.current_lsb_a * 1_000_000
         power_uw = voltage_mv * current_ua / 1000.0
+        self._last_current_ua = current_ua
+        self._last_power_uw = power_uw
         return voltage_mv, current_ua, power_uw
+
+    def status(self):
+        calibration = self._read_register(_REG_CALIBRATION)
+        bus_raw = self._read_register(_REG_BUS_VOLTAGE)
+        current_raw = self._read_register_signed(_REG_CURRENT)
+        power_raw = self._read_register(_REG_POWER)
+        voltage_mv = ((bus_raw >> 3) & 0x1FFF) * 4.0
+        current_ua = current_raw * self.current_lsb_a * 1_000_000
+        return {
+            "available": True,
+            "channel": self.channel,
+            "address": f"0x{self.addr:02x}",
+            "shunt_ohms": self.shunt_ohms,
+            "max_current_a": self.max_current_a,
+            "shunt_range_a": self.shunt_range_a,
+            "shunt_range_mv": self.shunt_range_v * 1000.0,
+            "current_lsb_ua": self.current_lsb_a * 1_000_000,
+            "calibration": calibration,
+            "expected_calibration": self.calibration,
+            "calibrated": calibration != 0,
+            "overrange_expected": self.overrange_expected,
+            "voltage_mv": voltage_mv,
+            "current_ua": current_ua,
+            "power_uw": voltage_mv * current_ua / 1000.0,
+            "power_raw": power_raw,
+        }
 
 
 # ── Shared state ────────────────────────────────────────────────────────────
@@ -100,14 +179,20 @@ class INA219:
 sse_clients: list[queue.Queue] = []
 sse_lock = threading.Lock()
 
-# Ring buffer for chart history (last 120 seconds at ~10 Hz = 1200 points)
-MAX_HISTORY = 1200
+# Ring buffer for chart history (high-resolution rolling window)
+MAX_HISTORY = 10000
 power_history: list[dict] = []
 history_lock = threading.Lock()
 
-# Ring buffer for 2-second rolling average at full sample rate
-AVG_WINDOW_S = 2.0
-avg_samples: list[tuple[float, float]] = []  # (timestamp, current_ua)
+# Active INA219 instances for status and manual reconfiguration.
+ina_sensors: dict[int, INA219] = {}
+ina_channel_active = None
+ina_highspeed_channels: list[int] = []
+ina_lock = threading.Lock()
+
+# Ring buffer for rolling average at full sample rate
+AVG_WINDOW_S = 3.0
+avg_samples: dict[int, list[tuple[float, float]]] = {}  # channel -> [(timestamp, current_ua)]
 avg_lock = threading.Lock()
 
 # State log (last 200 entries)
@@ -219,50 +304,216 @@ def broadcast_sse(event: str, data: dict):
 
 # ── INA219 sampling thread ─────────────────────────────────────────────────
 
-def ina_thread(ina, sample_rate, csv_writer, csv_lock, csv_file, stop_event):
+def _channel_status_locked(channel, ina):
+    try:
+        status = ina.status()
+        status["channel"] = channel
+        return status
+    except OSError as exc:
+        return {
+            "available": False,
+            "channel": channel,
+            "address": f"0x{ina.addr:02x}",
+            "error": str(exc),
+        }
+
+
+def _ina_status_payload_locked():
+    if not ina_sensors:
+        return {"available": False, "error": "INA219 disabled", "channels": []}
+    channels = [
+        _channel_status_locked(channel, ina)
+        for channel, ina in sorted(ina_sensors.items())
+    ]
+    return {
+        "available": any(ch.get("available") for ch in channels),
+        "active_channel": ina_channel_active,
+        "highspeed_channels": list(ina_highspeed_channels),
+        "channels": channels,
+    }
+
+
+def _parse_optional_positive_float(payload, key):
+    if key not in payload or payload[key] in (None, ""):
+        return None
+    value = float(payload[key])
+    if value <= 0:
+        raise ValueError(f"{key} must be positive")
+    return value
+
+
+def _load_calibration_config():
+    try:
+        with CALIBRATION_CONFIG_PATH.open() as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"Warning: could not load {CALIBRATION_CONFIG_PATH}: {exc}", flush=True)
+        return {}
+
+    channels = data.get("channels", data)
+    if not isinstance(channels, dict):
+        return {}
+    loaded = {}
+    for key, cfg in channels.items():
+        try:
+            channel = int(key)
+            if channel not in CHANNEL_ADDRS or not isinstance(cfg, dict):
+                continue
+            loaded[channel] = {
+                "shunt_ohms": float(cfg["shunt_ohms"]),
+                "max_current_a": float(cfg["max_current_a"]),
+            }
+        except (KeyError, TypeError, ValueError):
+            continue
+    return loaded
+
+
+def _load_highspeed_config():
+    try:
+        with CALIBRATION_CONFIG_PATH.open() as f:
+            data = json.load(f)
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return None
+
+    raw_channels = data.get("highspeed_channels")
+    if not isinstance(raw_channels, list):
+        return None
+
+    channels = []
+    for raw_channel in raw_channels:
+        try:
+            channel = int(raw_channel)
+        except (TypeError, ValueError):
+            continue
+        if channel in CHANNEL_ADDRS and channel not in channels:
+            channels.append(channel)
+    return channels or None
+
+
+def _save_calibration_config_locked():
+    data = {
+        "highspeed_channels": list(ina_highspeed_channels),
+        "channels": {
+            str(channel): {
+                "shunt_ohms": ina.shunt_ohms,
+                "max_current_a": ina.max_current_a,
+            }
+            for channel, ina in sorted(ina_sensors.items())
+        }
+    }
+    tmp_path = CALIBRATION_CONFIG_PATH.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    tmp_path.replace(CALIBRATION_CONFIG_PATH)
+
+
+def ina_thread(highspeed_channels, sample_rate, csv_writer, csv_lock, csv_file, stop_event):
+    highspeed_channels = list(highspeed_channels)
     sample_interval = 1.0 / sample_rate
     # Downsample SSE to ~10 Hz to avoid flooding browsers
     sse_interval = 0.1
+    # Low-speed channel plots are fed from the status stream at ~10 Hz.
+    status_sse_interval = 0.1
     last_sse = 0
+    last_status_sse = 0
+    last_csv_flush = time.monotonic()
+    display_sum_ua = {}
+    display_count = {}
+    batch_points = {}
+    channel_index = 0
 
     while not stop_event.is_set():
         t0 = time.monotonic()
         try:
-            voltage_mv, current_ua, power_uw = ina.read_all()
-            now = datetime.now(timezone.utc).isoformat()
+            with ina_lock:
+                current_highspeed_channels = [
+                    channel for channel in ina_highspeed_channels
+                    if channel in ina_sensors
+                ]
+                if not current_highspeed_channels:
+                    current_highspeed_channels = [
+                        channel for channel in highspeed_channels
+                        if channel in ina_sensors
+                    ]
+                if not current_highspeed_channels:
+                    raise OSError("No INA219 high-speed channels available")
+                if channel_index >= len(current_highspeed_channels):
+                    channel_index = 0
+                active_channel = current_highspeed_channels[channel_index]
+                channel_index = (channel_index + 1) % len(current_highspeed_channels)
+                ina = ina_sensors.get(active_channel)
+                if ina is None:
+                    raise OSError(f"INA219 CH{active_channel} unavailable")
+                voltage_mv, current_ua, power_uw = ina.read_all()
             ts = time.time()
+            now = f"{ts:.6f}"
 
             with csv_lock:
                 csv_writer.writerow([
-                    now, "INA219", "", "",
+                    now, f"INA219_CH{active_channel}", "", "",
                     f"{voltage_mv:.1f}", f"{current_ua:.1f}", f"{power_uw:.1f}",
                 ])
-                csv_file.flush()
-
-            # Update rolling average window with every sample
-            with avg_lock:
-                avg_samples.append((ts, current_ua))
-                cutoff = ts - AVG_WINDOW_S
-                while avg_samples and avg_samples[0][0] < cutoff:
-                    avg_samples.pop(0)
-                avg_current_ua = sum(s[1] for s in avg_samples) / len(avg_samples)
+                if time.monotonic() - last_csv_flush >= 0.1:
+                    csv_file.flush()
+                    last_csv_flush = time.monotonic()
 
             point = {
-                "ts": round(ts, 3),
+                "ts": round(ts, 6),
+                "channel": active_channel,
                 "voltage_mv": round(voltage_mv, 1),
                 "current_ua": round(current_ua, 1),
                 "power_uw": round(power_uw, 1),
-                "avg_current_ua": round(avg_current_ua, 1),
             }
+            batch_points.setdefault(active_channel, []).append(point)
+            display_sum_ua[active_channel] = display_sum_ua.get(active_channel, 0.0) + current_ua
+            display_count[active_channel] = display_count.get(active_channel, 0) + 1
 
-            with history_lock:
-                power_history.append(point)
-                if len(power_history) > MAX_HISTORY:
-                    del power_history[:len(power_history) - MAX_HISTORY]
+            with avg_lock:
+                samples = avg_samples.setdefault(active_channel, [])
+                samples.append((ts, current_ua))
+                cutoff = ts - AVG_WINDOW_S
+                while samples and samples[0][0] < cutoff:
+                    samples.pop(0)
+                window_avg_current_ua = (
+                    sum(sample[1] for sample in samples) / len(samples)
+                    if samples else current_ua
+                )
+
+            point["window_avg_current_ua"] = round(window_avg_current_ua, 1)
 
             if ts - last_sse >= sse_interval:
-                broadcast_sse("power", point)
+                for channel in sorted(batch_points):
+                    points = batch_points.get(channel, [])
+                    if not points:
+                        continue
+                    avg_current_ua = (
+                        display_sum_ua.get(channel, 0.0) / display_count[channel]
+                        if display_count[channel] else points[-1]["current_ua"]
+                    )
+                    latest = dict(points[-1])
+                    latest["avg_current_ua"] = round(avg_current_ua, 1)
+                    latest["avg_window_s"] = AVG_WINDOW_S
+                    latest["highspeed_channels"] = current_highspeed_channels
+
+                    with history_lock:
+                        power_history.extend(points)
+                        if len(power_history) > MAX_HISTORY:
+                            del power_history[:len(power_history) - MAX_HISTORY]
+
+                    payload = dict(latest)
+                    payload["samples"] = points
+                    broadcast_sse("power", payload)
+                    batch_points[channel] = []
+                    display_sum_ua[channel] = 0.0
+                    display_count[channel] = 0
+
                 last_sse = ts
+
+            if ts - last_status_sse >= status_sse_interval:
+                with ina_lock:
+                    broadcast_sse("ina219", _ina_status_payload_locked())
+                last_status_sse = ts
 
         except OSError:
             pass
@@ -676,6 +927,178 @@ def history():
         return jsonify(list(power_history))
 
 
+@app.route("/api/ina219")
+def ina219_info():
+    """Return live Waveshare/INA219 status."""
+    if not ina_sensors:
+        return jsonify({"available": False, "error": "INA219 disabled", "channels": []})
+    if not ina_lock.acquire(timeout=1.0):
+        return jsonify({"available": False, "error": "INA219 reader busy"}), 503
+    try:
+        return jsonify(_ina_status_payload_locked())
+    except OSError as exc:
+        return jsonify({"available": False, "error": str(exc), "channels": []}), 503
+    finally:
+        ina_lock.release()
+
+
+@app.route("/api/ina219/<int:channel>")
+def ina219_channel_info(channel):
+    """Return one Waveshare/INA219 channel status."""
+    if channel not in CHANNEL_ADDRS:
+        return jsonify({"available": False, "error": "invalid channel"}), 404
+    if not ina_lock.acquire(timeout=1.0):
+        return jsonify({"available": False, "error": "INA219 reader busy"}), 503
+    try:
+        ina = ina_sensors.get(channel)
+        if ina is None:
+            return jsonify({"available": False, "channel": channel, "error": "channel disabled"}), 404
+        return jsonify(_channel_status_locked(channel, ina))
+    finally:
+        ina_lock.release()
+
+
+def _reconfigure_channel_locked(channel, ina, shunt_ohms=None, max_current_a=None):
+    ina.configure(shunt_ohms=shunt_ohms, max_current_a=max_current_a)
+    status = ina.status()
+    status["channel"] = channel
+    status["status"] = "ok"
+    return status
+
+
+def _parse_highspeed_payload_channels(payload):
+    raw_channels = payload.get("channels", [])
+    if isinstance(raw_channels, dict):
+        raw_channels = [
+            key for key, enabled in raw_channels.items()
+            if enabled
+        ]
+    elif isinstance(raw_channels, str):
+        raw_channels = parse_channel_list(raw_channels)
+    elif not isinstance(raw_channels, list):
+        raise ValueError("channels must be a list, object, or comma-separated string")
+
+    channels = []
+    for raw_channel in raw_channels:
+        channel = int(raw_channel)
+        if channel not in CHANNEL_ADDRS:
+            raise ValueError(f"invalid INA219 channel {channel}")
+        if channel not in ina_sensors:
+            raise ValueError(f"INA219 CH{channel} is not configured")
+        if channel not in channels:
+            channels.append(channel)
+    if not channels:
+        raise ValueError("at least one high-speed channel is required")
+    return channels
+
+
+@app.route("/api/ina219/highspeed", methods=["POST"])
+def ina219_highspeed():
+    """Set INA219 channels sampled by the high-speed acquisition loop."""
+    global ina_highspeed_channels, ina_channel_active
+    if not ina_sensors:
+        return jsonify({"status": "error", "error": "INA219 disabled"}), 404
+    payload = request.get_json(silent=True) or {}
+    if not ina_lock.acquire(timeout=1.0):
+        return jsonify({"status": "error", "error": "INA219 reader busy"}), 503
+    try:
+        channels = _parse_highspeed_payload_channels(payload)
+        ina_highspeed_channels = channels
+        if ina_channel_active not in channels:
+            ina_channel_active = channels[0]
+        _save_calibration_config_locked()
+        status = _ina_status_payload_locked()
+        status["status"] = "ok"
+        broadcast_sse("ina219", status)
+        print(
+            "INA219 high-speed channels set to "
+            + ",".join(f"CH{channel}" for channel in channels),
+            flush=True,
+        )
+        return jsonify(status)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+    finally:
+        ina_lock.release()
+
+
+@app.route("/api/ina219/reconfigure", methods=["POST"])
+def ina219_reconfigure():
+    """Reapply INA219 configuration/calibration on all configured channels."""
+    if not ina_sensors:
+        return jsonify({"status": "error", "error": "INA219 disabled"}), 404
+    if not ina_lock.acquire(timeout=1.0):
+        return jsonify({"status": "error", "error": "INA219 reader busy"}), 503
+    try:
+        payload_in = request.get_json(silent=True) or {}
+        channel_updates = payload_in.get("channels", {})
+        if channel_updates and not isinstance(channel_updates, dict):
+            return jsonify({"status": "error", "error": "channels must be an object"}), 400
+
+        channels = []
+        for channel, ina in sorted(ina_sensors.items()):
+            update = channel_updates.get(str(channel), channel_updates.get(channel, {}))
+            if update is None:
+                update = {}
+            if not isinstance(update, dict):
+                return jsonify({"status": "error", "error": f"CH{channel} update must be an object"}), 400
+            shunt_ohms = _parse_optional_positive_float(update, "shunt_ohms")
+            max_current_a = _parse_optional_positive_float(update, "max_current_a")
+            channels.append(_reconfigure_channel_locked(
+                channel, ina,
+                shunt_ohms=shunt_ohms,
+                max_current_a=max_current_a,
+            ))
+        _save_calibration_config_locked()
+        payload = {
+            "status": "ok",
+            "available": True,
+            "active_channel": ina_channel_active,
+            "highspeed_channels": list(ina_highspeed_channels),
+            "channels": channels,
+        }
+        broadcast_sse("ina219", payload)
+        print("INA219 all channels calibrated manually", flush=True)
+        return jsonify(payload)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+    except OSError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 503
+    finally:
+        ina_lock.release()
+
+
+@app.route("/api/ina219/<int:channel>/reconfigure", methods=["POST"])
+def ina219_channel_reconfigure(channel):
+    """Reapply INA219 configuration/calibration on one channel."""
+    if channel not in CHANNEL_ADDRS:
+        return jsonify({"status": "error", "error": "invalid channel"}), 404
+    if not ina_lock.acquire(timeout=1.0):
+        return jsonify({"status": "error", "error": "INA219 reader busy"}), 503
+    try:
+        ina = ina_sensors.get(channel)
+        if ina is None:
+            return jsonify({"status": "error", "channel": channel, "error": "channel disabled"}), 404
+        payload = request.get_json(silent=True) or {}
+        shunt_ohms = _parse_optional_positive_float(payload, "shunt_ohms")
+        max_current_a = _parse_optional_positive_float(payload, "max_current_a")
+        status = _reconfigure_channel_locked(
+            channel, ina,
+            shunt_ohms=shunt_ohms,
+            max_current_a=max_current_a,
+        )
+        _save_calibration_config_locked()
+        broadcast_sse("ina219", _ina_status_payload_locked())
+        print(f"INA219 CH{channel} calibrated manually", flush=True)
+        return jsonify(status)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+    except OSError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 503
+    finally:
+        ina_lock.release()
+
+
 @app.route("/api/esp32")
 def esp32_info():
     """Return detected ESP32 connection info."""
@@ -747,9 +1170,19 @@ def parse_args():
     p.add_argument("--baud", type=int, default=115200, help="Baud rate")
     p.add_argument("--out", default="power_log.csv", help="Output CSV path")
     p.add_argument("--ina-channel", type=int, default=1, choices=[1, 2, 3, 4],
-                   help="Waveshare HAT channel (1-4, default: 1)")
+                   help="Waveshare HAT channel used for the high-rate chart (1-4, default: 1)")
+    p.add_argument("--ina-channels", default=None,
+                   help="Comma-separated Waveshare HAT channels to monitor, e.g. 1,2,3,4")
+    p.add_argument("--highspeed-channels", default=None,
+                   help="Comma-separated INA219 channels sampled for high-speed plots, e.g. 1,2")
     p.add_argument("--sample-rate", type=int, default=100,
-                   help="INA219 samples per second (default: 100)")
+                   help="Total INA219 high-speed samples per second across high-speed channels (default: 100)")
+    p.add_argument("--max-current", default=str(DEFAULT_MAX_CURRENT_A),
+                   help=("Expected max current in A for INA219 calibration/range. "
+                         "Use a single value or channel map like 1:16,2:3"))
+    p.add_argument("--shunt-ohms", default=str(DEFAULT_SHUNT_OHMS),
+                   help=("Shunt resistance in ohms. Use a single value or channel map "
+                         "like 1:0.02,2:0.1"))
     p.add_argument("--no-ina", action="store_true",
                    help="Disable INA219 reading (serial only)")
     p.add_argument("--web-port", type=int, default=5000,
@@ -761,8 +1194,50 @@ def parse_args():
     return p.parse_args()
 
 
+def parse_channel_list(raw):
+    channels = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        channel = int(part)
+        if channel not in CHANNEL_ADDRS:
+            raise ValueError(f"invalid INA219 channel {channel}")
+        if channel not in channels:
+            channels.append(channel)
+    if not channels:
+        raise ValueError("at least one INA219 channel is required")
+    return channels
+
+
+def parse_channel_values(raw, channels, default):
+    values = {channel: float(default) for channel in channels}
+    raw = str(raw).strip()
+    if not raw:
+        return values
+    if ":" not in raw and "=" not in raw:
+        shared = float(raw)
+        return {channel: shared for channel in channels}
+
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if ":" in part:
+            key, value = part.split(":", 1)
+        elif "=" in part:
+            key, value = part.split("=", 1)
+        else:
+            raise ValueError(f"invalid channel value {part!r}")
+        channel = int(key.strip())
+        if channel not in channels:
+            raise ValueError(f"value provided for disabled INA219 channel {channel}")
+        values[channel] = float(value.strip())
+    return values
+
+
 def main():
-    global esp32_host, esp32_port
+    global esp32_host, esp32_port, ina_sensors, ina_channel_active, ina_highspeed_channels
     args = parse_args()
     esp32_host = args.esp32_host
     esp32_port = args.esp32_port
@@ -785,18 +1260,75 @@ def main():
 
     # Start INA219
     if not args.no_ina:
-        addr = CHANNEL_ADDRS[args.ina_channel]
+        channel_spec = args.ina_channels or str(args.ina_channel)
         try:
-            ina = INA219(address=addr)
-            print(f"INA219 found on CH{args.ina_channel} (0x{addr:02x}), "
-                  f"sampling at {args.sample_rate} Hz")
+            channels = parse_channel_list(channel_spec)
+            highspeed_channels = parse_channel_list(args.highspeed_channels or str(args.ina_channel))
+            for channel in highspeed_channels:
+                if channel not in channels:
+                    raise ValueError(f"high-speed channel {channel} is not in --ina-channels")
+            shunt_values = parse_channel_values(args.shunt_ohms, channels, DEFAULT_SHUNT_OHMS)
+            max_current_values = parse_channel_values(args.max_current, channels, DEFAULT_MAX_CURRENT_A)
+            persisted_calibration = _load_calibration_config()
+            persisted_highspeed_channels = _load_highspeed_config()
+            for channel, cfg in persisted_calibration.items():
+                if channel in channels:
+                    shunt_values[channel] = cfg["shunt_ohms"]
+                    max_current_values[channel] = cfg["max_current_a"]
+            if persisted_highspeed_channels:
+                highspeed_channels = [
+                    channel for channel in persisted_highspeed_channels
+                    if channel in channels
+                ] or highspeed_channels
+        except ValueError as e:
+            raise SystemExit(f"Invalid INA219 configuration: {e}") from e
+
+        detected = {}
+        for channel in channels:
+            addr = CHANNEL_ADDRS[channel]
+            try:
+                ina = INA219(
+                    address=addr,
+                    shunt_ohms=shunt_values[channel],
+                    max_current_a=max_current_values[channel],
+                    channel=channel,
+                )
+                detected[channel] = ina
+                warning = " overrange-risk" if ina.overrange_expected else ""
+                print(f"INA219 found on CH{channel} (0x{addr:02x}), "
+                      f"shunt {ina.shunt_ohms:g} ohm, "
+                      f"calibrated for {ina.max_current_a:g} A, "
+                      f"shunt range +/-{ina.shunt_range_a:g} A{warning}")
+            except OSError as e:
+                print(f"Warning: INA219 not found on CH{channel} (0x{addr:02x}): {e}")
+
+        if detected:
+            detected_highspeed_channels = [
+                channel for channel in highspeed_channels
+                if channel in detected
+            ]
+            if not detected_highspeed_channels:
+                detected_highspeed_channels = [sorted(detected)[0]]
+            active_channel = (
+                args.ina_channel
+                if args.ina_channel in detected_highspeed_channels
+                else detected_highspeed_channels[0]
+            )
+            with ina_lock:
+                ina_sensors = detected
+                ina_channel_active = active_channel
+                ina_highspeed_channels = detected_highspeed_channels
+            print(f"INA219 active chart channel CH{active_channel}, "
+                  f"high-speed channels "
+                  f"{','.join(f'CH{ch}' for ch in detected_highspeed_channels)}, "
+                  f"sampling at {args.sample_rate} Hz total")
             t = threading.Thread(target=ina_thread, daemon=True,
-                                 args=(ina, args.sample_rate,
+                                 args=(detected_highspeed_channels, args.sample_rate,
                                        csv_writer, csv_lock_obj, csv_file,
                                        stop_event))
             t.start()
-        except OSError as e:
-            print(f"Warning: INA219 not found on 0x{addr:02x}: {e}")
+        else:
+            print("Warning: no INA219 channels found.")
             print("  Continuing without power monitoring. Use --no-ina to suppress.")
 
     # Start serial reader
