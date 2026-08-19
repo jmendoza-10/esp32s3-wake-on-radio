@@ -7,5 +7,7 @@ dependencies.lock
 rpi/.venv/
 rpi/power_log.csv
 rpi/ina219_calibration.json
+rpi/ina226_config.json
+rpi/external_monitor_config.json
 __pycache__/
 *.pyc

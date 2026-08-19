@@ -78,6 +78,16 @@
   .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; }
   .stat-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
   .stat-unit { font-size: 12px; color: var(--muted); }
+  .dashboard-state {
+    color: var(--muted);
+    font-size: 12px;
+    margin: -8px 0 16px;
+    text-transform: uppercase;
+  }
+  .dashboard-state span {
+    color: var(--text);
+    font-weight: 700;
+  }
 
   /* Chart */
   .chart-wrap { position: relative; height: 300px; }
@@ -201,6 +211,91 @@
     padding: 8px;
   }
   .driver-stat .stat-value { font-size: 20px; }
+  .external-monitor-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .external-monitor-grid .driver-stat {
+    min-height: 48px;
+    padding: 5px 4px;
+  }
+  .external-monitor-grid .stat-label {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+  .external-monitor-grid .stat-value {
+    font-size: 17px;
+    line-height: 1.1;
+  }
+  .external-monitor-grid .stat-unit {
+    font-size: 10px;
+  }
+  .monitor-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .status-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 4px 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .status-key {
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .status-value {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-weight: 700;
+    text-overflow: ellipsis;
+  }
+  .mini-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .mini-dot.ok { background: var(--green); }
+  .mini-dot.warn { background: var(--orange); }
+  .mini-dot.bad { background: var(--red); }
+  .compact-detail {
+    min-height: 14px;
+    margin-top: 6px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .monitor-config-drawer {
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+  }
+  .monitor-config-drawer summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    list-style-position: inside;
+  }
+  .monitor-config-drawer[open] summary {
+    margin-bottom: 4px;
+  }
   .ina-panel-header {
     display: flex;
     align-items: flex-start;
@@ -242,6 +337,9 @@
   .ina-channel-row.highspeed .ina-channel-panel {
     border-color: var(--accent);
   }
+  .ina-channel-row.disabled .ina-channel-panel {
+    opacity: 0.65;
+  }
   .ina-channel-panel {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -270,6 +368,46 @@
     border: 1px solid var(--border);
     border-radius: 4px;
   }
+  .ina-input-row select {
+    width: 100%;
+    margin-top: 4px;
+    padding: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .ina-input-row.three {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .ina-input-row.four {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .ina-toggle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .ina-toggle {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .ina-toggle input {
+    flex: 0 0 auto;
+    width: auto;
+    margin: 0;
+  }
   .ina-button-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -280,6 +418,12 @@
     margin-bottom: 0;
     padding: 8px 10px;
     font-size: 12px;
+  }
+  .ina-button-row.four {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .ina-button-row.three {
+    grid-template-columns: repeat(3, 1fr);
   }
   .ina-mode-badge {
     display: inline-block;
@@ -320,6 +464,11 @@
     .grid { grid-template-columns: 1fr; }
     .stats { flex-wrap: wrap; }
     .ina-channel-row { grid-template-columns: 1fr; }
+    .ina-toggle-row { grid-template-columns: 1fr; }
+    .ina-input-row.three { grid-template-columns: 1fr; }
+    .ina-input-row.four { grid-template-columns: 1fr; }
+    .ina-button-row.four { grid-template-columns: 1fr 1fr; }
+    .ina-button-row.three { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -329,49 +478,184 @@
   <span class="status-dot" id="statusDot"></span>
   Wake-on-Radio Dashboard
 </h1>
-
-<div class="stats">
-  <div class="stat">
-    <div class="stat-label">Current</div>
-    <div><span class="stat-value" id="statCurrent">--</span> <span class="stat-unit">mA</span></div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">3s Window Avg</div>
-    <div><span class="stat-value" id="statAvgCurrent">--</span> <span class="stat-unit">mA</span></div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Voltage</div>
-    <div><span class="stat-value" id="statVoltage">--</span> <span class="stat-unit">mV</span></div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Power</div>
-    <div><span class="stat-value" id="statPower">--</span> <span class="stat-unit">mW</span></div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">State</div>
-    <div class="stat-value" id="statState" style="font-size:16px">--</div>
-  </div>
-</div>
+<div class="dashboard-state">State <span id="statState">--</span></div>
 
 <div class="grid">
   <div>
-    <div class="panel">
-      <div class="ina-panel-header">
-        <h2>Waveshare HAT <span class="driver-indicator" id="inaDot" title="Checking HAT"></span></h2>
-        <div class="ina-panel-actions">
-          <button class="small-btn" id="inaBtn" onclick="reconfigureInaAll()" style="background:var(--accent)">
-            CAL ALL
-          </button>
-          <button class="small-btn" id="inaPauseAllBtn" onclick="toggleInaPauseAll()" style="background:var(--accent)">
-            PAUSE ALL
-          </button>
-          <button class="small-btn" id="inaExportBtn" onclick="exportInaHighspeedCsv()" style="background:var(--accent)">
-            EXPORT CSV
-          </button>
+	    <div class="panel">
+	      <div class="ina-panel-header">
+	        <h2>Waveshare HAT <span class="driver-indicator" id="inaDot" title="Checking HAT"></span></h2>
+	      </div>
+	      <div class="compact-detail">
+	        High-speed channels <span id="inaRange" style="color:var(--text)">--</span>
+	      </div>
+      <div class="ina-channel-row" id="ina226Row" style="margin-top:12px">
+        <div class="ina-channel-panel" id="ina226Card">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px">
+            <div style="font-weight:700" id="ina226Title">External Monitor 4V</div>
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="ina-mode-badge" id="ina226Mode">1000 HZ</span>
+              <span class="driver-indicator unavailable" id="ina226Dot" title="External monitor unavailable"></span>
+            </div>
+          </div>
+          <div class="driver-grid external-monitor-grid">
+            <div class="driver-stat">
+              <div class="stat-label">Current</div>
+              <div class="stat-value" id="ina226Current">--</div>
+              <div class="stat-unit">mA</div>
+            </div>
+            <div class="driver-stat">
+              <div class="stat-label">3s Avg</div>
+              <div class="stat-value" id="ina226AvgCurrent">--</div>
+              <div class="stat-unit">mA</div>
+            </div>
+            <div class="driver-stat">
+              <div class="stat-label">Voltage</div>
+              <div class="stat-value" id="ina226Voltage">--</div>
+              <div class="stat-unit">mV</div>
+            </div>
+            <div class="driver-stat">
+              <div class="stat-label">Power</div>
+              <div class="stat-value" id="ina226Power">--</div>
+              <div class="stat-unit">mW</div>
+            </div>
+            <div class="driver-stat">
+              <div class="stat-label">DRX Trough</div>
+              <div class="stat-value" id="ina226DrxCurrent">--</div>
+              <div class="stat-unit">mA</div>
+            </div>
+	            <div class="driver-stat">
+	              <div class="stat-label">DRX Peaks</div>
+	              <div class="stat-value" id="ina226DrxPeaks">--</div>
+	              <div class="stat-unit">spacing</div>
+	            </div>
+	          </div>
+	          <div class="monitor-status-grid">
+	            <div class="status-chip" id="ina226CfgChip">
+	              <span class="mini-dot" id="ina226CfgDot"></span>
+	              <span class="status-key">CFG</span>
+	              <span class="status-value" id="ina226CfgSummary">--</span>
+	            </div>
+	            <div class="status-chip" id="ina226CalChip">
+	              <span class="mini-dot" id="ina226CalDot"></span>
+	              <span class="status-key">CAL</span>
+	              <span class="status-value" id="ina226CalSummary">--</span>
+	            </div>
+	            <div class="status-chip" id="ina226RateChip">
+	              <span class="mini-dot" id="ina226RateDot"></span>
+	              <span class="status-key">ADC</span>
+	              <span class="status-value" id="ina226RateSummary">--</span>
+            </div>
+	            <div class="status-chip" id="ina226RangeChip">
+	              <span class="mini-dot" id="ina226RangeDot"></span>
+	              <span class="status-key">RNG</span>
+	              <span class="status-value" id="ina226RangeSummary">--</span>
+	            </div>
+	            <div class="status-chip" id="ina226DrxChip">
+	              <span class="mini-dot" id="ina226DrxDot"></span>
+	              <span class="status-key">DRX</span>
+              <span class="status-value" id="ina226DrxSummary">--</span>
+            </div>
+          </div>
+          <div class="compact-detail" id="ina226Meta" title="--">--</div>
+          <div class="compact-detail" id="ina226DrxMeta" title="DRX auto detecting">DRX detecting</div>
+          <details class="monitor-config-drawer">
+            <summary>CONFIG</summary>
+            <div class="ina-input-row four">
+              <label class="stat-label">Device
+                <select id="ina226DeviceType">
+                  <option value="auto" selected>AUTO</option>
+                  <option value="ina226">INA226</option>
+                  <option value="ina228">INA228</option>
+                </select>
+              </label>
+              <label class="stat-label">Address
+                <input id="ina226Address" type="text" value="0x44">
+              </label>
+              <label class="stat-label">Rail
+                <select id="ina226RailMode">
+                  <option value="4v" selected>4V</option>
+                  <option value="12v">12V</option>
+                  <option value="auto">AUTO</option>
+                </select>
+              </label>
+              <label class="stat-label">Shunt ohm
+                <input id="ina226Shunt" type="number" step="0.0001" min="0.0001" value="0.002">
+              </label>
+            </div>
+            <div class="ina-input-row four">
+              <label class="stat-label">Max A
+                <input id="ina226MaxCurrent" type="number" step="0.1" min="0.1" value="6.0">
+              </label>
+              <label class="stat-label">Poll Hz
+                <input id="ina226SampleRate" type="number" step="1" min="1" max="1000" value="1000">
+              </label>
+              <label class="stat-label">Avg
+                <select id="ina226Averages">
+                  <option value="1">1</option>
+                  <option value="4">4</option>
+                  <option value="16">16</option>
+                  <option value="64" selected>64</option>
+                  <option value="128">128</option>
+                  <option value="256">256</option>
+                  <option value="512">512</option>
+                  <option value="1024">1024</option>
+                </select>
+              </label>
+              <label class="stat-label">Range mV
+                <select id="ina226AdcRange">
+                  <option value="40.96" selected>40.96</option>
+                  <option value="163.84">163.84</option>
+                </select>
+              </label>
+            </div>
+            <div class="ina-input-row">
+              <label class="stat-label">Conv us
+                <select id="ina226ConversionTime">
+                  <option value="140">140</option>
+                  <option value="204">204</option>
+                  <option value="332">332</option>
+                  <option value="588">588</option>
+                  <option value="1100" selected>1100</option>
+                  <option value="2116">2116</option>
+                  <option value="4156">4156</option>
+                  <option value="8244">8244</option>
+                </select>
+              </label>
+	              <label class="stat-label">DRX Max mA
+	                <input id="ina226DrxThreshold" type="number" step="1" min="1" value="25">
+	              </label>
+	              <label class="stat-label">Ref mA
+	                <input id="ina226ReferenceCurrentMa" type="number" step="0.1" value="">
+	              </label>
+	            </div>
+	            <div class="ina-button-row three">
+	              <button class="trigger-btn" id="ina226ApplyBtn" onclick="configureIna226(false)" style="background:var(--accent)">
+	                APPLY
+	              </button>
+	              <button class="trigger-btn" id="ina226ResetBtn" onclick="configureIna226(true)" style="background:var(--accent)">
+	                RESET
+	              </button>
+	              <button class="trigger-btn" id="ina226CalShuntBtn" onclick="calibrateIna226Shunt()" style="background:var(--green)">
+	                CAL SHUNT
+	              </button>
+	            </div>
+	          </details>
+          <div class="ina-button-row three">
+            <button class="trigger-btn" id="ina226DrxBtn" onclick="toggleDrxAnalysis()" style="background:var(--accent)">
+              DRX OFF
+            </button>
+            <button class="trigger-btn" id="ina226PauseBtn" onclick="toggleIna226Pause()" style="background:var(--accent)">
+              PAUSE
+            </button>
+            <button class="trigger-btn" id="ina226ExportBtn" onclick="exportIna226Csv()" style="background:var(--accent)">
+              EXPORT
+            </button>
+          </div>
         </div>
-      </div>
-      <div class="stat-label">
-        High-speed channels: <span id="inaRange" style="color:var(--text)">--</span>
+        <div class="ina-channel-chart">
+          <canvas id="ina226Chart"></canvas>
+        </div>
       </div>
       <div class="ina-channel-list" id="inaChannels"></div>
       <div class="trigger-info" id="inaMessage">--</div>
@@ -384,7 +668,75 @@
   </div>
 
   <div>
-    <div class="panel trigger-section">
+    <div class="panel">
+      <h2>RPi System <span class="driver-indicator unavailable" id="systemDot" title="System stats pending"></span></h2>
+      <div class="driver-grid">
+        <div class="driver-stat">
+          <div class="stat-label">CPU</div>
+          <div class="stat-value" id="systemCpu">--</div>
+          <div class="stat-unit">%</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Memory</div>
+          <div class="stat-value" id="systemMem">--</div>
+          <div class="stat-unit" id="systemMemText">--</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Load</div>
+          <div class="stat-value" id="systemLoad">--</div>
+          <div class="stat-unit">1 min</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value" id="systemUptime">--</div>
+          <div class="stat-unit">d:h</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h2>Power Capture <span class="driver-indicator" id="powerCaptureDot" title="Capture idle"></span></h2>
+      <div class="driver-grid">
+        <div class="driver-stat">
+          <div class="stat-label">Elapsed</div>
+          <div class="stat-value" id="powerCaptureElapsed">--</div>
+          <div class="stat-unit">s</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Rows</div>
+          <div class="stat-value" id="powerCaptureRows">--</div>
+          <div class="stat-unit">samples</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Dropped</div>
+          <div class="stat-value" id="powerCaptureDropped">--</div>
+          <div class="stat-unit">queue</div>
+        </div>
+        <div class="driver-stat">
+          <div class="stat-label">Size</div>
+          <div class="stat-value" id="powerCaptureSize">--</div>
+          <div class="stat-unit" id="powerCaptureSizeUnit">--</div>
+        </div>
+      </div>
+      <div class="ina-button-row">
+        <button class="trigger-btn" id="powerCaptureBtn" onclick="togglePowerCapture()" style="background:var(--green)">
+          START LOG
+        </button>
+        <button class="trigger-btn" id="powerCaptureDownloadBtn" onclick="downloadLatestPowerCapture()" style="background:var(--accent)" disabled>
+          DOWNLOAD
+        </button>
+      </div>
+      <div class="compact-detail" id="powerCaptureFile" title="No capture file">No capture file</div>
+      <div id="powerCaptureError" style="margin-top:8px; color:var(--red); font-size:11px; display:none;"></div>
+      <div id="powerCaptureList" class="rtt-history" style="max-height:100px; margin-top:10px;">
+        <table>
+          <thead><tr><th>File</th><th>Size</th><th></th></tr></thead>
+          <tbody id="powerCaptureBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel trigger-section" style="margin-top:16px">
       <h2>Trigger</h2>
       <button class="trigger-btn" id="triggerBtn" onclick="sendTrigger()">
         SEND UDP WAKE
@@ -538,20 +890,6 @@
 </div>
 
 <script>
-// ── Live stats ───────────────────────────────────────────────────────────
-
-function updateStats(data) {
-  document.getElementById('statCurrent').textContent = (data.current_ua / 1000).toFixed(1);
-  document.getElementById('statVoltage').textContent = data.voltage_mv.toFixed(0);
-  document.getElementById('statPower').textContent = (data.power_uw / 1000).toFixed(1);
-
-  if (data.window_avg_current_ua != null) {
-    document.getElementById('statAvgCurrent').textContent = (data.window_avg_current_ua / 1000).toFixed(1);
-  } else if (data.avg_current_ua != null) {
-    document.getElementById('statAvgCurrent').textContent = (data.avg_current_ua / 1000).toFixed(1);
-  }
-}
-
 // ── State log ────────────────────────────────────────────────────────────
 
 function addStateEntry(entry) {
@@ -572,7 +910,8 @@ function addStateEntry(entry) {
     tbody.removeChild(tbody.lastChild);
   }
 
-  document.getElementById('statState').textContent = entry.state;
+  const state = document.getElementById('statState');
+  if (state) state.textContent = entry.state;
 
   // Auto-scroll
   const log = document.getElementById('stateLog');
@@ -743,17 +1082,900 @@ function loadRttHistory(data) {
 
 let inaActiveChannel = null;
 let inaHighspeedChannels = [];
+let inaEnabledChannels = [];
 const INA_CHANNELS = [1, 2, 3, 4];
 const INA_MAX_POINTS = 5000;
+const AVG_WINDOW_S = 3.0;
+const INA226_MAX_POINTS = 5000;
 const inaCharts = {};
 const inaChartData = {};
+const inaChartTimestamps = {};
 const inaSampleBuffers = {};
 const inaPaused = {};
+const inaDrxEnabled = {};
+const inaDrxResults = {};
+const inaDrxSuspended = {};
+const inaDrxLastAnalysisMs = {};
+const inaDrxAnalysisTimers = {};
+const inaDrxAnalysisRunning = {};
 let inaAllPaused = false;
+let ina226Chart = null;
+let ina226ChartData = null;
+let ina226ChartTimestamps = [];
+let ina226SampleBuffer = [];
+let ina226Paused = false;
+let drxTroughResult = null;
+const EXTERNAL_MONITOR_CONVERSION_TIMES = {
+  ina226: [140, 204, 332, 588, 1100, 2116, 4156, 8244],
+  ina228: [50, 84, 150, 280, 540, 1052, 2074, 4120],
+};
+const EXTERNAL_MONITOR_DEFAULT_CONVERSION = { ina226: 1100, ina228: 1052 };
+const DRX_MIN_ANALYSIS_SAMPLES = 80;
+const DRX_EXPECTED_PERIOD_MS = 1280;
+const DRX_HALF_PERIOD_MS = DRX_EXPECTED_PERIOD_MS / 2;
+const DRX_PERIOD_TOLERANCE_MS = 180;
+const DRX_HALF_PERIOD_TOLERANCE_MS = 120;
+const DRX_TROUGH_CEILING_PCT = 95;
+const DRX_GUARD_MS = 140;
+const DRX_PHASE_TOLERANCE_MS = 180;
+const DRX_MIN_LOCKED_PEAKS = 3;
+const DRX_ANALYSIS_WINDOW_MS = Math.round(AVG_WINDOW_S * 1000 + DRX_GUARD_MS * 2);
+const DRX_ANALYSIS_INTERVAL_MS = 5000;
+const DRX_OVERLAY_MAX_POINTS = INA226_MAX_POINTS;
+const DRX_TROUGH_MIN_SPIKE_MARGIN_MA = 2.0;
+const INA226_CHART_UPDATE_INTERVAL_MS = 100;
+let drxLastAnalysisMs = 0;
+let drxAnalysisTimer = null;
+let drxAnalysisRunning = false;
+let drxEnabled = false;
+let drxSuspended = false;
+let ina226ChartUpdateTimer = null;
+let ina226LastChartUpdateMs = 0;
 
 function formatMaybe(value, decimals) {
   return value == null || Number.isNaN(Number(value)) ? '--' : Number(value).toFixed(decimals);
 }
+
+function mean(values) {
+  if (!values.length) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function percentile(values, pct) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const position = (Math.max(0, Math.min(100, pct)) / 100) * (sorted.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  const weight = position - lower;
+  return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+function medianAbsDeviation(values, center) {
+  return median(values.map(value => Math.abs(value - center))) || 0;
+}
+
+function trimmedMean(values, lowPct = 5, highPct = 95) {
+  if (!values.length) return null;
+  const low = percentile(values, lowPct);
+  const high = percentile(values, highPct);
+  const trimmed = values.filter(value => value >= low && value <= high);
+  return mean(trimmed.length ? trimmed : values);
+}
+
+function monotonicNowMs() {
+  return globalThis.performance && typeof globalThis.performance.now === 'function'
+    ? globalThis.performance.now()
+    : Date.now();
+}
+
+function readDrxOptions() {
+  return {
+    troughCeilingPct: DRX_TROUGH_CEILING_PCT,
+    guardMs: DRX_GUARD_MS,
+    windowMs: DRX_ANALYSIS_WINDOW_MS,
+  };
+}
+
+function setStatusText(id, text, title = null) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  if (title != null) el.title = title;
+}
+
+function setStatusDot(id, state, title = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = `mini-dot ${state || ''}`.trim();
+  el.title = title;
+}
+
+function updateDrxButton() {
+  const btn = document.getElementById('ina226DrxBtn');
+  if (!btn) return;
+  btn.textContent = drxEnabled ? 'DRX ON' : 'DRX OFF';
+  btn.style.background = drxEnabled ? 'var(--green)' : 'var(--accent)';
+}
+
+function readDrxThresholdMa() {
+  const input = document.getElementById('ina226DrxThreshold');
+  const value = input ? Number(input.value) : 25;
+  return Number.isFinite(value) && value > 0 ? value : 25;
+}
+
+function latestExternalAvgMa() {
+  const sample = ina226SampleBuffer[ina226SampleBuffer.length - 1];
+  if (!sample) return null;
+  const avg = Number(sample.window_avg_current_ma);
+  if (Number.isFinite(avg)) return avg;
+  const current = Number(sample.current_ma);
+  return Number.isFinite(current) ? current : null;
+}
+
+function setDrxSummary(text, state = '', title = '') {
+  setStatusText('ina226DrxSummary', text, title);
+  setStatusDot('ina226DrxDot', state, title);
+}
+
+function updateExternalMonitorChips(d, detail = '') {
+  if (!d || !d.available) {
+    const error = d && d.error ? d.error : 'External monitor unavailable';
+    setStatusText('ina226CfgSummary', 'MISS', error);
+    setStatusDot('ina226CfgDot', 'bad', error);
+    setStatusText('ina226CalSummary', 'MISS', error);
+    setStatusDot('ina226CalDot', 'bad', error);
+    setStatusText('ina226RateSummary', '--', error);
+    setStatusDot('ina226RateDot', '', error);
+    setStatusText('ina226RangeSummary', '--', error);
+    setStatusDot('ina226RangeDot', '', error);
+    return;
+  }
+
+  const address = d.address || '0x??';
+  const railLabel = d.rail_label || '4V';
+  const sampleRate = d.sample_rate_hz != null ? `${Number(d.sample_rate_hz).toFixed(0)}Hz` : '--';
+  const averages = d.averages != null ? `${Number(d.averages)}x` : '?x';
+  const conv = d.conversion_time_us != null ? `${Number(d.conversion_time_us)}us` : '?us';
+  const range = d.adc_range_mv != null ? `${Number(d.adc_range_mv).toFixed(2)}mV` : '--';
+  const lsb = d.current_lsb_ua != null ? `${Number(d.current_lsb_ua).toFixed(1)}uA/bit` : '--';
+  const warning = d.warning || (d.overrange_expected ? 'Overrange risk' : '');
+
+  setStatusText('ina226CfgSummary', `${address} ${railLabel}`, detail);
+  setStatusDot('ina226CfgDot', 'ok', 'External monitor configured');
+  setStatusText('ina226CalSummary', d.calibrated ? 'OK' : 'LOST', d.calibrated ? 'Calibrated' : 'Calibration register is zero');
+  setStatusDot('ina226CalDot', d.calibrated ? 'ok' : 'warn', d.calibrated ? 'Calibrated' : 'Calibration register is zero');
+  setStatusText('ina226RateSummary', `${averages} ${conv}`, `${sampleRate}, ${averages} average, ${conv} conversion`);
+  setStatusDot('ina226RateDot', 'ok', `${sampleRate} poll`);
+  setStatusText('ina226RangeSummary', range, `${range}, ${lsb}${warning ? `, ${warning}` : ''}`);
+  setStatusDot('ina226RangeDot', d.overrange_expected ? 'warn' : 'ok', warning || 'Range ok');
+}
+
+function clearDrxTroughDisplay(message = 'DRX auto detecting', clearOverlay = true) {
+  const currentEl = document.getElementById('ina226DrxCurrent');
+  if (currentEl) currentEl.textContent = '--';
+  updateDrxPeakSpacingDisplay(null);
+  const meta = document.getElementById('ina226DrxMeta');
+  if (meta) {
+    meta.textContent = message;
+    meta.title = message;
+  }
+  drxTroughResult = null;
+  if (!clearOverlay) return;
+  if (ina226ChartData && ina226ChartData.datasets.length >= 4) {
+    ina226ChartData.datasets[2].data.fill(null);
+    ina226ChartData.datasets[3].data.fill(null);
+  }
+  for (const sample of ina226SampleBuffer) {
+    sample.drx_trough_selected = false;
+    sample.drx_trough_avg_ma = '';
+    sample.drx_trough_avg_mw = '';
+  }
+}
+
+function updateDrxPeakSpacingDisplay(result) {
+  const peaksEl = document.getElementById('ina226DrxPeaks');
+  if (!peaksEl) return;
+  if (!result || result.spikeSpacingMs == null) {
+    peaksEl.textContent = '--';
+    peaksEl.title = 'Peak spacing not detected';
+    return;
+  }
+  peaksEl.textContent = result.spikeSpacingLabel;
+  const confidence = Number.isFinite(result.spikeSpacingConfidence)
+    ? `${(result.spikeSpacingConfidence * 100).toFixed(0)}%`
+    : '--';
+  peaksEl.title = (
+    `Median ${result.spikeSpacingMs.toFixed(0)} ms, `
+    + `${confidence} confidence over ${result.spikeSpacingCount || 0} intervals`
+  );
+}
+
+function setDrxEnabled(enabled) {
+  drxEnabled = Boolean(enabled);
+  drxSuspended = false;
+  if (drxAnalysisTimer != null) {
+    clearTimeout(drxAnalysisTimer);
+    drxAnalysisTimer = null;
+  }
+  updateDrxButton();
+  if (!drxEnabled) {
+    clearDrxTroughDisplay('DRX off');
+    setDrxSummary('OFF', '', 'DRX detector disabled');
+    requestIna226ChartUpdate();
+    return;
+  }
+  clearDrxTroughDisplay('DRX armed');
+  setDrxSummary('ARM', 'ok', 'DRX detector enabled');
+  scheduleDrxTroughAnalysis(true);
+}
+
+function toggleDrxAnalysis() {
+  setDrxEnabled(!drxEnabled);
+}
+
+function selectDrxPeakCandidates(points, currents) {
+  const q50 = percentile(currents, 50);
+  const q95 = percentile(currents, 95);
+  const q97 = percentile(currents, 97);
+  const mad = medianAbsDeviation(currents, q50);
+  const thresholdMa = Math.max(q97, q95, q50 + Math.max(10, mad * 6));
+  const minSeparationMs = DRX_EXPECTED_PERIOD_MS * 0.45;
+  const candidates = points
+    .filter(point => point.currentMa >= thresholdMa)
+    .sort((a, b) => b.currentMa - a.currentMa);
+  const peaks = [];
+  for (const candidate of candidates) {
+    if (peaks.every(peak => Math.abs(peak.tsMs - candidate.tsMs) >= minSeparationMs)) {
+      peaks.push(candidate);
+    }
+  }
+  peaks.sort((a, b) => a.tsMs - b.tsMs);
+  return { peaks, thresholdMa };
+}
+
+function estimateDrxPeriodMs(peaks) {
+  const normalized = [];
+  for (let i = 1; i < peaks.length; i += 1) {
+    const diff = peaks[i].tsMs - peaks[i - 1].tsMs;
+    const cycles = Math.max(1, Math.round(diff / DRX_EXPECTED_PERIOD_MS));
+    const period = diff / cycles;
+    if (Math.abs(period - DRX_EXPECTED_PERIOD_MS) <= DRX_PERIOD_TOLERANCE_MS) {
+      normalized.push(period);
+    }
+  }
+  return normalized.length >= 2 ? median(normalized) : null;
+}
+
+function classifyDrxSpikeSpacing(peaks) {
+  const diffs = [];
+  for (let i = 1; i < peaks.length; i += 1) {
+    const diff = peaks[i].tsMs - peaks[i - 1].tsMs;
+    if (Number.isFinite(diff) && diff > 0) diffs.push(diff);
+  }
+  if (diffs.length === 0) {
+    return { spacingMs: null, label: '--', confidence: 0, count: 0 };
+  }
+
+  const halfCount = diffs.filter(diff => Math.abs(diff - DRX_HALF_PERIOD_MS) <= DRX_HALF_PERIOD_TOLERANCE_MS).length;
+  const fullCount = diffs.filter(diff => Math.abs(diff - DRX_EXPECTED_PERIOD_MS) <= DRX_PERIOD_TOLERANCE_MS).length;
+  const spacingMs = median(diffs);
+  if (halfCount === 0 && fullCount === 0) {
+    return { spacingMs, label: `${(spacingMs / 1000).toFixed(2)}s`, confidence: 0, count: diffs.length };
+  }
+  if (halfCount >= fullCount) {
+    return { spacingMs, label: '0.64s', confidence: halfCount / diffs.length, count: diffs.length };
+  }
+  return { spacingMs, label: '1.28s', confidence: fullCount / diffs.length, count: diffs.length };
+}
+
+function phaseLockDrxPeaks(peaks, periodMs) {
+  if (!periodMs) return null;
+  let best = null;
+  for (const anchorPeak of peaks) {
+    const anchorMs = anchorPeak.tsMs;
+    const byCycle = new Map();
+    for (const peak of peaks) {
+      const cycle = Math.round((peak.tsMs - anchorMs) / periodMs);
+      const expectedMs = anchorMs + cycle * periodMs;
+      const errorMs = Math.abs(peak.tsMs - expectedMs);
+      if (errorMs > DRX_PHASE_TOLERANCE_MS) continue;
+      const existing = byCycle.get(cycle);
+      if (!existing || peak.currentMa > existing.peak.currentMa) {
+        byCycle.set(cycle, { cycle, peak, errorMs });
+      }
+    }
+    const locked = [...byCycle.values()].sort((a, b) => a.cycle - b.cycle);
+    if (locked.length < 3) continue;
+    const errors = locked.map(item => item.errorMs);
+    const score = locked.length * 1000 - (median(errors) || 0);
+    if (!best || score > best.score) {
+      best = {
+        score,
+        anchorMs,
+        locked,
+        medianErrorMs: median(errors),
+      };
+    }
+  }
+  return best;
+}
+
+function sampledIndexSet(points, maxPoints) {
+  if (points.length <= maxPoints) return new Set(points.map(point => point.index));
+  const stride = Math.ceil(points.length / maxPoints);
+  return new Set(points.filter((point, offset) => offset % stride === 0).map(point => point.index));
+}
+
+function collectDrxAnalysisPoints(samples, options) {
+  const points = [];
+  let latestTsMs = null;
+  if (options.windowMs) {
+    for (let index = samples.length - 1; index >= 0; index -= 1) {
+      const epochS = Number(samples[index].epoch_s);
+      if (Number.isFinite(epochS)) {
+        latestTsMs = epochS * 1000;
+        break;
+      }
+    }
+  }
+  const cutoffTsMs = latestTsMs == null ? null : latestTsMs - options.windowMs;
+
+  for (let index = samples.length - 1; index >= 0; index -= 1) {
+    const sample = samples[index];
+    const currentMa = Number(sample.current_ma);
+    const epochS = Number(sample.epoch_s);
+    if (!Number.isFinite(currentMa) || !Number.isFinite(epochS)) continue;
+    const tsMs = epochS * 1000;
+    if (cutoffTsMs != null && tsMs < cutoffTsMs) break;
+    const voltageMv = Number(sample.voltage_mv);
+    const powerMw = Number(sample.power_mw);
+    points.push({
+      index,
+      tsMs,
+      currentMa,
+      voltageMv: Number.isFinite(voltageMv) ? voltageMv : null,
+      powerMw: Number.isFinite(powerMw)
+        ? powerMw
+        : (Number.isFinite(voltageMv) ? (voltageMv * currentMa / 1000) : null),
+    });
+  }
+  points.reverse();
+  return points;
+}
+
+function computeDrxTroughAverage(samples, options) {
+  const points = collectDrxAnalysisPoints(samples, options);
+  if (points.length < DRX_MIN_ANALYSIS_SAMPLES) {
+    return { ok: false, reason: `need ${DRX_MIN_ANALYSIS_SAMPLES} samples` };
+  }
+
+  const currents = points.map(point => point.currentMa);
+  const { peaks, thresholdMa: peakThresholdMa } = selectDrxPeakCandidates(points, currents);
+  const spikeSpacing = classifyDrxSpikeSpacing(peaks);
+  const observedPeriodMs = estimateDrxPeriodMs(peaks);
+  const periodMs = DRX_EXPECTED_PERIOD_MS;
+  const periodOk = true;
+  const lock = phaseLockDrxPeaks(peaks, periodMs);
+  if (!lock || lock.locked.length < DRX_MIN_LOCKED_PEAKS) {
+    const observedText = observedPeriodMs == null
+      ? 'observed period not found'
+      : `observed ${(observedPeriodMs / 1000).toFixed(2)}s`;
+    const spikeText = spikeSpacing.spacingMs == null
+      ? 'spikes not found'
+      : `spikes ${spikeSpacing.label}`;
+    return {
+      ok: false,
+      reason: `DRX not locked to 1.28s, ${spikeText}, ${observedText}`,
+      spikeSpacingMs: spikeSpacing.spacingMs,
+      spikeSpacingLabel: spikeSpacing.label,
+      spikeSpacingConfidence: spikeSpacing.confidence,
+      spikeSpacingCount: spikeSpacing.count,
+    };
+  }
+
+  const locked = lock.locked;
+  const firstCycle = locked[0].cycle;
+  const lastCycle = locked[locked.length - 1].cycle;
+  const expectedPeakMs = cycle => lock.anchorMs + cycle * periodMs;
+  const quietPoints = [];
+  const cycleBuckets = new Map();
+  for (const point of points) {
+    const cycle = Math.floor((point.tsMs - lock.anchorMs) / periodMs);
+    if (cycle < firstCycle || cycle >= lastCycle) continue;
+    const startMs = expectedPeakMs(cycle) + options.guardMs;
+    const endMs = expectedPeakMs(cycle + 1) - options.guardMs;
+    if (point.tsMs < startMs || point.tsMs > endMs) continue;
+    quietPoints.push(point);
+    if (!cycleBuckets.has(cycle)) cycleBuckets.set(cycle, []);
+    cycleBuckets.get(cycle).push(point);
+  }
+  if (quietPoints.length < 10) {
+    return { ok: false, reason: 'not enough quiet trough samples' };
+  }
+
+  const quietCurrents = quietPoints.map(point => point.currentMa);
+  const lockedPeakCurrents = locked.map(item => item.peak.currentMa);
+  const quietMedianMa = median(quietCurrents);
+  const quietNoiseMa = medianAbsDeviation(quietCurrents, quietMedianMa) * 1.4826;
+  const percentileCeilingMa = percentile(quietCurrents, options.troughCeilingPct);
+  const noiseCeilingMa = quietMedianMa + Math.max(quietNoiseMa * 3, Math.abs(quietMedianMa) * 0.5, 0.5);
+  const spikeMarginCeilingMa = Math.min(...lockedPeakCurrents) - DRX_TROUGH_MIN_SPIKE_MARGIN_MA;
+  const troughCeilingMa = Math.min(percentileCeilingMa, noiseCeilingMa, spikeMarginCeilingMa);
+  const selected = points.filter(point => point.currentMa <= troughCeilingMa);
+  if (selected.length < 10) {
+    return { ok: false, reason: 'not enough quiet trough samples' };
+  }
+
+  const selectedCurrents = selected.map(point => point.currentMa);
+  const selectedPowers = selected
+    .map(point => point.powerMw)
+    .filter(value => Number.isFinite(value));
+  const avgCurrentMa = mean(selectedCurrents);
+  const avgPowerMw = mean(selectedPowers);
+  const selectedSet = options.includeOverlay ? new Set(selected.map(point => point.index)) : null;
+  const overlaySet = options.includeOverlay ? sampledIndexSet(selected, DRX_OVERLAY_MAX_POINTS) : null;
+  const selectedMinMa = Math.min(...selectedCurrents);
+  const selectedMaxMa = Math.max(...selectedCurrents);
+  const selectedMedianMa = median(selectedCurrents);
+  const deviations = selectedCurrents.map(value => Math.abs(value - selectedMedianMa));
+  const noiseMa = median(deviations) * 1.4826;
+  const analysisStartIndex = points[0].index;
+  const analysisEndIndex = points[points.length - 1].index;
+
+  return {
+    ok: true,
+    avgCurrentMa,
+    avgPowerMw,
+    selectedSet,
+    overlaySet,
+    selectedCount: selected.length,
+    totalCount: points.length,
+    selectedPct: selected.length * 100 / points.length,
+    peakThresholdMa,
+    peakCount: locked.length,
+    candidatePeakCount: peaks.length,
+    periodMs,
+    spikeSpacingMs: spikeSpacing.spacingMs,
+    spikeSpacingLabel: spikeSpacing.label,
+    spikeSpacingConfidence: spikeSpacing.confidence,
+    spikeSpacingCount: spikeSpacing.count,
+    observedPeriodMs,
+    periodOk,
+    phaseErrorMs: lock.medianErrorMs,
+    troughCeilingMa,
+    selectedMinMa,
+    selectedMaxMa,
+    noiseMa,
+    analysisStartIndex,
+    analysisEndIndex,
+    troughCeilingPct: options.troughCeilingPct,
+    guardMs: options.guardMs,
+  };
+}
+
+function runDrxTroughAnalysis(redraw = true, renderOverlay = false) {
+  if (drxAnalysisRunning) return;
+  drxAnalysisRunning = true;
+  drxLastAnalysisMs = monotonicNowMs();
+  try {
+    const result = computeDrxTroughAverage(ina226SampleBuffer, {
+      ...readDrxOptions(),
+      includeOverlay: renderOverlay,
+    });
+    if (!result.ok) {
+      clearDrxTroughDisplay(`DRX detecting: ${result.reason}`, renderOverlay);
+      updateDrxPeakSpacingDisplay(result);
+      setDrxSummary(
+        result.spikeSpacingMs == null ? 'SEARCH' : result.spikeSpacingLabel,
+        'warn',
+        result.reason
+      );
+      if (redraw && renderOverlay) requestIna226ChartUpdate();
+      return;
+    }
+
+    drxTroughResult = result;
+    const currentEl = document.getElementById('ina226DrxCurrent');
+    const meta = document.getElementById('ina226DrxMeta');
+    if (currentEl) {
+      currentEl.textContent = result.avgCurrentMa.toFixed(2);
+    }
+    updateDrxPeakSpacingDisplay(result);
+    setDrxSummary(
+      result.spikeSpacingLabel || 'LOCK',
+      'ok',
+      `${result.selectedCount}/${result.totalCount} samples, ${result.avgCurrentMa.toFixed(2)} mA`
+    );
+    const periodText = result.periodMs == null
+      ? 'period --'
+      : `period ${(result.periodMs / 1000).toFixed(2)}s ${result.periodOk ? 'ok' : 'check'}`;
+    const observedText = result.observedPeriodMs == null
+      ? 'observed --'
+      : `observed ${(result.observedPeriodMs / 1000).toFixed(2)}s`;
+    const spikeText = result.spikeSpacingMs == null
+      ? 'spikes --'
+      : `spikes ${result.spikeSpacingLabel}`;
+    const ceilingText = result.troughCeilingMa == null ? 'ceiling --' : `ceiling ${result.troughCeilingMa.toFixed(2)} mA`;
+    const rangeText = Number.isFinite(result.selectedMinMa) && Number.isFinite(result.selectedMaxMa)
+      ? `range ${result.selectedMinMa.toFixed(2)}-${result.selectedMaxMa.toFixed(2)} mA`
+      : 'range --';
+    const noiseText = Number.isFinite(result.noiseMa) ? `noise ${result.noiseMa.toFixed(2)} mA` : 'noise --';
+    const powerText = result.avgPowerMw == null ? 'power --' : `power ${result.avgPowerMw.toFixed(2)} mW`;
+    const phaseText = result.phaseErrorMs == null ? 'phase --' : `phase ${result.phaseErrorMs.toFixed(0)} ms`;
+    if (meta) {
+      const detail = (
+        `DRX trough ${result.selectedCount}/${result.totalCount} samples `
+        + `(${result.selectedPct.toFixed(1)}%), current ${result.avgCurrentMa.toFixed(2)} mA, ${powerText}, `
+        + `${periodText}, ${spikeText}, ${observedText}, peaks ${result.peakCount}/${result.candidatePeakCount}, ${phaseText}, `
+        + `target 1.28s, ${ceilingText}, ${rangeText}, ${noiseText}`
+      );
+      meta.textContent = `${result.selectedCount}/${result.totalCount} samples, ${result.avgCurrentMa.toFixed(2)} mA, ${spikeText}`;
+      meta.title = detail;
+    }
+
+    if (renderOverlay) {
+      ina226SampleBuffer.forEach((sample, index) => {
+        sample.drx_trough_selected = result.selectedSet.has(index);
+        sample.drx_trough_avg_ma = result.avgCurrentMa.toFixed(6);
+        sample.drx_trough_avg_mw = result.avgPowerMw == null ? '' : result.avgPowerMw.toFixed(6);
+      });
+      if (ina226ChartData && ina226ChartData.datasets.length >= 4) {
+        ina226ChartData.datasets[2].data = ina226SampleBuffer.map((sample, index) => (
+          result.overlaySet.has(index) ? Number(sample.current_ma) : null
+        ));
+        ina226ChartData.datasets[3].data = ina226SampleBuffer.map((sample, index) => (
+          index >= result.analysisStartIndex && index <= result.analysisEndIndex ? result.avgCurrentMa : null
+        ));
+      }
+    }
+    if (redraw && renderOverlay) requestIna226ChartUpdate();
+  } finally {
+    drxAnalysisRunning = false;
+  }
+}
+
+function scheduleDrxTroughAnalysis(redraw = true) {
+  if (ina226Paused || !drxEnabled) return;
+  const avgMa = latestExternalAvgMa();
+  const thresholdMa = readDrxThresholdMa();
+  if (avgMa != null && avgMa > thresholdMa) {
+    if (!drxSuspended) {
+      drxSuspended = true;
+      const message = `DRX suspended: 3s avg ${avgMa.toFixed(1)} mA > ${thresholdMa.toFixed(1)} mA`;
+      clearDrxTroughDisplay(message, false);
+      setDrxSummary('SUSP', 'warn', message);
+    }
+    return;
+  }
+  if (drxSuspended) {
+    drxSuspended = false;
+    clearDrxTroughDisplay('DRX armed', false);
+    setDrxSummary('ARM', 'ok', 'DRX detector enabled');
+  }
+  const now = monotonicNowMs();
+  const remainingMs = DRX_ANALYSIS_INTERVAL_MS - (now - drxLastAnalysisMs);
+  if (remainingMs <= 0 && !drxAnalysisRunning) {
+    runDrxTroughAnalysis(redraw && ina226Paused, ina226Paused);
+    return;
+  }
+  if (drxAnalysisTimer != null) return;
+  drxAnalysisTimer = setTimeout(() => {
+    drxAnalysisTimer = null;
+    scheduleDrxTroughAnalysis(redraw);
+  }, Math.max(50, remainingMs));
+}
+
+function setInaChannelSummary(channel, key, text, state = '', title = '') {
+  setStatusText(`inaCh${channel}${key}Summary`, text, title);
+  setStatusDot(`inaCh${channel}${key}Dot`, state, title);
+}
+
+function updateInaDrxButton(channel) {
+  const btn = document.getElementById(`inaCh${channel}DrxBtn`);
+  if (!btn) return;
+  btn.textContent = inaDrxEnabled[channel] ? 'DRX ON' : 'DRX OFF';
+  btn.style.background = inaDrxEnabled[channel] ? 'var(--green)' : 'var(--accent)';
+}
+
+function readInaDrxThresholdMa(channel) {
+  const input = document.getElementById(`inaCh${channel}DrxThreshold`);
+  const value = input ? Number(input.value) : 25;
+  return Number.isFinite(value) && value > 0 ? value : 25;
+}
+
+function latestInaAvgMa(channel) {
+  const buffer = inaSampleBuffers[channel] || [];
+  const sample = buffer[buffer.length - 1];
+  if (!sample) return null;
+  const avg = Number(sample.window_avg_current_ma);
+  if (Number.isFinite(avg)) return avg;
+  const current = Number(sample.current_ma);
+  return Number.isFinite(current) ? current : null;
+}
+
+function setInaDrxSummary(channel, text, state = '', title = '') {
+  setInaChannelSummary(channel, 'Drx', text, state, title);
+}
+
+function updateInaDrxPeakSpacingDisplay(channel, result) {
+  const peaksEl = document.getElementById(`inaCh${channel}DrxPeaks`);
+  if (!peaksEl) return;
+  if (!result || result.spikeSpacingMs == null) {
+    peaksEl.textContent = '--';
+    peaksEl.title = 'Peak spacing not detected';
+    return;
+  }
+  peaksEl.textContent = result.spikeSpacingLabel;
+  const confidence = Number.isFinite(result.spikeSpacingConfidence)
+    ? `${(result.spikeSpacingConfidence * 100).toFixed(0)}%`
+    : '--';
+  peaksEl.title = (
+    `Median ${result.spikeSpacingMs.toFixed(0)} ms, `
+    + `${confidence} confidence over ${result.spikeSpacingCount || 0} intervals`
+  );
+}
+
+function clearInaDrxTroughDisplay(channel, message = 'DRX off', clearOverlay = true) {
+  const currentEl = document.getElementById(`inaCh${channel}DrxCurrent`);
+  if (currentEl) currentEl.textContent = '--';
+  updateInaDrxPeakSpacingDisplay(channel, null);
+  const meta = document.getElementById(`inaCh${channel}DrxMeta`);
+  if (meta) {
+    meta.textContent = message;
+    meta.title = message;
+  }
+  inaDrxResults[channel] = null;
+  if (!clearOverlay) return;
+  const chartData = inaChartData[channel];
+  if (chartData && chartData.datasets.length >= 4) {
+    chartData.datasets[2].data = chartData.datasets[2].data.map(() => null);
+    chartData.datasets[3].data = chartData.datasets[3].data.map(() => null);
+  }
+  for (const sample of (inaSampleBuffers[channel] || [])) {
+    sample.drx_trough_selected = false;
+    sample.drx_trough_avg_ma = '';
+    sample.drx_trough_avg_mw = '';
+  }
+}
+
+function setInaDrxEnabled(channel, enabled) {
+  inaDrxEnabled[channel] = Boolean(enabled);
+  inaDrxSuspended[channel] = false;
+  if (inaDrxAnalysisTimers[channel] != null) {
+    clearTimeout(inaDrxAnalysisTimers[channel]);
+    inaDrxAnalysisTimers[channel] = null;
+  }
+  updateInaDrxButton(channel);
+  if (!inaDrxEnabled[channel]) {
+    clearInaDrxTroughDisplay(channel, 'DRX off');
+    setInaDrxSummary(channel, 'OFF', '', 'DRX detector disabled');
+    if (inaCharts[channel]) inaCharts[channel].update('none');
+    return;
+  }
+  clearInaDrxTroughDisplay(channel, 'DRX armed');
+  setInaDrxSummary(channel, 'ARM', 'ok', 'DRX detector enabled');
+  scheduleInaDrxTroughAnalysis(channel, true);
+}
+
+function toggleInaDrxAnalysis(channel) {
+  setInaDrxEnabled(channel, !inaDrxEnabled[channel]);
+}
+
+function runInaDrxTroughAnalysis(channel, redraw = true, renderOverlay = false) {
+  if (inaDrxAnalysisRunning[channel]) return;
+  inaDrxAnalysisRunning[channel] = true;
+  inaDrxLastAnalysisMs[channel] = monotonicNowMs();
+  try {
+    const result = computeDrxTroughAverage(inaSampleBuffers[channel] || [], {
+      ...readDrxOptions(),
+      includeOverlay: renderOverlay,
+    });
+    if (!result.ok) {
+      clearInaDrxTroughDisplay(channel, `DRX detecting: ${result.reason}`, renderOverlay);
+      updateInaDrxPeakSpacingDisplay(channel, result);
+      setInaDrxSummary(
+        channel,
+        result.spikeSpacingMs == null ? 'SEARCH' : result.spikeSpacingLabel,
+        'warn',
+        result.reason
+      );
+      if (redraw && renderOverlay && inaCharts[channel]) inaCharts[channel].update('none');
+      return;
+    }
+
+    inaDrxResults[channel] = result;
+    const currentEl = document.getElementById(`inaCh${channel}DrxCurrent`);
+    const meta = document.getElementById(`inaCh${channel}DrxMeta`);
+    if (currentEl) {
+      currentEl.textContent = result.avgCurrentMa.toFixed(2);
+    }
+    updateInaDrxPeakSpacingDisplay(channel, result);
+    setInaDrxSummary(
+      channel,
+      result.spikeSpacingLabel || 'LOCK',
+      'ok',
+      `${result.selectedCount}/${result.totalCount} samples, ${result.avgCurrentMa.toFixed(2)} mA`
+    );
+    const periodText = result.periodMs == null
+      ? 'period --'
+      : `period ${(result.periodMs / 1000).toFixed(2)}s ${result.periodOk ? 'ok' : 'check'}`;
+    const observedText = result.observedPeriodMs == null
+      ? 'observed --'
+      : `observed ${(result.observedPeriodMs / 1000).toFixed(2)}s`;
+    const spikeText = result.spikeSpacingMs == null
+      ? 'spikes --'
+      : `spikes ${result.spikeSpacingLabel}`;
+    const ceilingText = result.troughCeilingMa == null ? 'ceiling --' : `ceiling ${result.troughCeilingMa.toFixed(2)} mA`;
+    const rangeText = Number.isFinite(result.selectedMinMa) && Number.isFinite(result.selectedMaxMa)
+      ? `range ${result.selectedMinMa.toFixed(2)}-${result.selectedMaxMa.toFixed(2)} mA`
+      : 'range --';
+    const noiseText = Number.isFinite(result.noiseMa) ? `noise ${result.noiseMa.toFixed(2)} mA` : 'noise --';
+    const powerText = result.avgPowerMw == null ? 'power --' : `power ${result.avgPowerMw.toFixed(2)} mW`;
+    const phaseText = result.phaseErrorMs == null ? 'phase --' : `phase ${result.phaseErrorMs.toFixed(0)} ms`;
+    if (meta) {
+      const detail = (
+        `DRX trough ${result.selectedCount}/${result.totalCount} samples `
+        + `(${result.selectedPct.toFixed(1)}%), current ${result.avgCurrentMa.toFixed(2)} mA, ${powerText}, `
+        + `${periodText}, ${spikeText}, ${observedText}, peaks ${result.peakCount}/${result.candidatePeakCount}, ${phaseText}, `
+        + `target 1.28s, ${ceilingText}, ${rangeText}, ${noiseText}`
+      );
+      meta.textContent = `${result.selectedCount}/${result.totalCount} samples, ${result.avgCurrentMa.toFixed(2)} mA, ${spikeText}`;
+      meta.title = detail;
+    }
+
+    if (renderOverlay) {
+      const samples = inaSampleBuffers[channel] || [];
+      samples.forEach((sample, index) => {
+        sample.drx_trough_selected = result.selectedSet.has(index);
+        sample.drx_trough_avg_ma = result.avgCurrentMa.toFixed(6);
+        sample.drx_trough_avg_mw = result.avgPowerMw == null ? '' : result.avgPowerMw.toFixed(6);
+      });
+      const chartData = inaChartData[channel];
+      if (chartData && chartData.datasets.length >= 4) {
+        chartData.datasets[2].data = samples.map((sample, index) => (
+          result.overlaySet.has(index) ? Number(sample.current_ma) : null
+        ));
+        chartData.datasets[3].data = samples.map((sample, index) => (
+          index >= result.analysisStartIndex && index <= result.analysisEndIndex ? result.avgCurrentMa : null
+        ));
+      }
+    }
+    if (redraw && renderOverlay && inaCharts[channel]) inaCharts[channel].update('none');
+  } finally {
+    inaDrxAnalysisRunning[channel] = false;
+  }
+}
+
+function scheduleInaDrxTroughAnalysis(channel, redraw = true) {
+  if (inaPaused[channel] || !inaDrxEnabled[channel]) return;
+  const avgMa = latestInaAvgMa(channel);
+  const thresholdMa = readInaDrxThresholdMa(channel);
+  if (avgMa != null && avgMa > thresholdMa) {
+    if (!inaDrxSuspended[channel]) {
+      inaDrxSuspended[channel] = true;
+      const message = `DRX suspended: 3s avg ${avgMa.toFixed(1)} mA > ${thresholdMa.toFixed(1)} mA`;
+      clearInaDrxTroughDisplay(channel, message, false);
+      setInaDrxSummary(channel, 'SUSP', 'warn', message);
+    }
+    return;
+  }
+  if (inaDrxSuspended[channel]) {
+    inaDrxSuspended[channel] = false;
+    clearInaDrxTroughDisplay(channel, 'DRX armed', false);
+    setInaDrxSummary(channel, 'ARM', 'ok', 'DRX detector enabled');
+  }
+  const now = monotonicNowMs();
+  const lastAnalysisMs = inaDrxLastAnalysisMs[channel] || 0;
+  const remainingMs = DRX_ANALYSIS_INTERVAL_MS - (now - lastAnalysisMs);
+  if (remainingMs <= 0 && !inaDrxAnalysisRunning[channel]) {
+    runInaDrxTroughAnalysis(channel, redraw && inaPaused[channel], inaPaused[channel]);
+    return;
+  }
+  if (inaDrxAnalysisTimers[channel] != null) return;
+  inaDrxAnalysisTimers[channel] = setTimeout(() => {
+    inaDrxAnalysisTimers[channel] = null;
+    scheduleInaDrxTroughAnalysis(channel, redraw);
+  }, Math.max(50, remainingMs));
+}
+
+function normalizeExternalMonitorType(type) {
+  return type === 'ina228' ? 'ina228' : (type === 'ina226' ? 'ina226' : 'auto');
+}
+
+function externalMonitorLabel(type) {
+  if (type === 'ina228') return 'INA228';
+  if (type === 'ina226') return 'INA226';
+  return 'External Monitor';
+}
+
+function conversionTypeForSelection(type) {
+  return type === 'ina228' ? 'ina228' : 'ina226';
+}
+
+function setExternalMonitorConversionOptions(type, selectedValue = null) {
+  const select = document.getElementById('ina226ConversionTime');
+  if (!select) return;
+  const conversionType = conversionTypeForSelection(normalizeExternalMonitorType(type));
+  const times = EXTERNAL_MONITOR_CONVERSION_TIMES[conversionType];
+  const previous = selectedValue != null ? Number(selectedValue) : Number(select.value);
+  const selected = times.includes(previous)
+    ? previous
+    : EXTERNAL_MONITOR_DEFAULT_CONVERSION[conversionType];
+  select.innerHTML = '';
+  for (const value of times) {
+    const option = document.createElement('option');
+    option.value = String(value);
+    option.textContent = String(value);
+    if (value === selected) option.selected = true;
+    select.appendChild(option);
+  }
+}
+
+function initExternalMonitorControls() {
+  const deviceInput = document.getElementById('ina226DeviceType');
+  if (!deviceInput) return;
+  setExternalMonitorConversionOptions(deviceInput.value);
+  deviceInput.addEventListener('change', () => {
+    setExternalMonitorConversionOptions(deviceInput.value);
+  });
+}
+
+function updateAvgWindowMarker(chart, timestamps, avgWindowS) {
+  if (!chart) return;
+  const windowS = Number(avgWindowS || AVG_WINDOW_S);
+  chart.$avgWindow = {
+    timestamps,
+    windowMs: Number.isFinite(windowS) && windowS > 0 ? windowS * 1000 : AVG_WINDOW_S * 1000,
+  };
+}
+
+const avgWindowPlugin = {
+  id: 'avgWindow',
+  afterDatasetsDraw(chart) {
+    const marker = chart.$avgWindow;
+    const timestamps = marker && Array.isArray(marker.timestamps) ? marker.timestamps : [];
+    if (timestamps.length < 2) return;
+
+    const { ctx, chartArea } = chart;
+    const visibleSpanMs = timestamps[timestamps.length - 1] - timestamps[0];
+    if (!Number.isFinite(visibleSpanMs) || visibleSpanMs <= 0) return;
+
+    const ratio = Math.max(0.02, Math.min(1, marker.windowMs / visibleSpanMs));
+    const right = chartArea.right - 0.5;
+    const left = Math.max(chartArea.left + 0.5, right - chartArea.width * ratio);
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 152, 0, 0.045)';
+    ctx.fillRect(left, chartArea.top, Math.max(1, right - left), chartArea.bottom - chartArea.top);
+
+    ctx.strokeStyle = 'rgba(255, 152, 0, 0.85)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(left, chartArea.top);
+    ctx.lineTo(left, chartArea.bottom);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255, 152, 0, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(right, chartArea.top);
+    ctx.lineTo(right, chartArea.bottom);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
+Chart.register(avgWindowPlugin);
 
 function inaChannelCard(channel) {
   return `
@@ -766,20 +1988,21 @@ function inaChannelCard(channel) {
             <span class="driver-indicator unavailable" id="inaCh${channel}Dot" title="Channel unavailable"></span>
           </div>
         </div>
-        <label class="stat-label" style="display:flex; align-items:center; gap:8px; margin-bottom:10px">
-          <input id="inaCh${channel}HighSpeed" type="checkbox" onchange="setInaHighspeedFromUi()">
-          High Speed Sampling
-        </label>
-        <div class="driver-grid">
-          <div class="driver-stat">
-            <div class="stat-label">Voltage</div>
-            <div class="stat-value" id="inaCh${channel}Voltage">--</div>
-            <div class="stat-unit">mV</div>
-          </div>
+        <div class="driver-grid external-monitor-grid">
           <div class="driver-stat">
             <div class="stat-label">Current</div>
             <div class="stat-value" id="inaCh${channel}Current">--</div>
             <div class="stat-unit">mA</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">3s Avg</div>
+            <div class="stat-value" id="inaCh${channel}AvgCurrent">--</div>
+            <div class="stat-unit">mA</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">Voltage</div>
+            <div class="stat-value" id="inaCh${channel}Voltage">--</div>
+            <div class="stat-unit">mV</div>
           </div>
           <div class="driver-stat">
             <div class="stat-label">Power</div>
@@ -787,25 +2010,83 @@ function inaChannelCard(channel) {
             <div class="stat-unit">mW</div>
           </div>
           <div class="driver-stat">
-            <div class="stat-label">Calibration</div>
-            <div class="stat-value" id="inaCh${channel}Cal" style="font-size:16px">--</div>
+            <div class="stat-label">DRX Trough</div>
+            <div class="stat-value" id="inaCh${channel}DrxCurrent">--</div>
+            <div class="stat-unit">mA</div>
+          </div>
+          <div class="driver-stat">
+            <div class="stat-label">DRX Peaks</div>
+            <div class="stat-value" id="inaCh${channel}DrxPeaks">--</div>
+            <div class="stat-unit">spacing</div>
           </div>
         </div>
-        <div class="stat-label" id="inaCh${channel}Meta" style="margin-top:8px; line-height:1.4">--</div>
-        <div class="ina-input-row">
-          <label class="stat-label">Shunt ohm
-            <input id="inaCh${channel}Shunt" type="number" step="0.001" min="0.001" value="0.1">
-          </label>
-          <label class="stat-label">Max A
-            <input id="inaCh${channel}MaxCurrent" type="number" step="0.1" min="0.1" value="3.0">
-          </label>
+        <div class="monitor-status-grid">
+          <div class="status-chip" id="inaCh${channel}CfgChip">
+            <span class="mini-dot" id="inaCh${channel}CfgDot"></span>
+            <span class="status-key">CFG</span>
+            <span class="status-value" id="inaCh${channel}CfgSummary">--</span>
+          </div>
+          <div class="status-chip" id="inaCh${channel}CalChip">
+            <span class="mini-dot" id="inaCh${channel}CalDot"></span>
+            <span class="status-key">CAL</span>
+            <span class="status-value" id="inaCh${channel}CalSummary">--</span>
+          </div>
+          <div class="status-chip" id="inaCh${channel}RateChip">
+            <span class="mini-dot" id="inaCh${channel}RateDot"></span>
+            <span class="status-key">RATE</span>
+            <span class="status-value" id="inaCh${channel}RateSummary">--</span>
+          </div>
+          <div class="status-chip" id="inaCh${channel}RangeChip">
+            <span class="mini-dot" id="inaCh${channel}RangeDot"></span>
+            <span class="status-key">RNG</span>
+            <span class="status-value" id="inaCh${channel}RangeSummary">--</span>
+          </div>
+          <div class="status-chip" id="inaCh${channel}DrxChip">
+            <span class="mini-dot" id="inaCh${channel}DrxDot"></span>
+            <span class="status-key">DRX</span>
+            <span class="status-value" id="inaCh${channel}DrxSummary">--</span>
+          </div>
         </div>
-        <div class="ina-button-row">
-          <button class="trigger-btn" id="inaCh${channel}Btn" onclick="reconfigureIna(${channel})" style="background:var(--accent)">
-            CAL CH${channel}
+        <div class="compact-detail" id="inaCh${channel}Meta" title="--">--</div>
+        <div class="compact-detail" id="inaCh${channel}DrxMeta" title="DRX off">DRX off</div>
+        <details class="monitor-config-drawer">
+          <summary>CONFIG</summary>
+          <div class="ina-toggle-row">
+            <label class="ina-toggle">
+              <input id="inaCh${channel}Enabled" type="checkbox" checked onchange="setInaEnabledFromUi()">
+              Enabled
+            </label>
+            <label class="ina-toggle">
+              <input id="inaCh${channel}HighSpeed" type="checkbox" onchange="setInaHighspeedFromUi()">
+              High Speed
+            </label>
+          </div>
+          <div class="ina-input-row three">
+            <label class="stat-label">Shunt ohm
+              <input id="inaCh${channel}Shunt" type="number" step="0.001" min="0.001" value="0.1">
+            </label>
+            <label class="stat-label">Max A
+              <input id="inaCh${channel}MaxCurrent" type="number" step="0.1" min="0.1" value="3.0">
+            </label>
+            <label class="stat-label">DRX Max mA
+              <input id="inaCh${channel}DrxThreshold" type="number" step="1" min="1" value="25">
+            </label>
+          </div>
+          <div class="ina-button-row">
+            <button class="trigger-btn" id="inaCh${channel}Btn" onclick="reconfigureIna(${channel})" style="background:var(--accent)">
+              APPLY
+            </button>
+          </div>
+        </details>
+        <div class="ina-button-row three">
+          <button class="trigger-btn" id="inaCh${channel}DrxBtn" onclick="toggleInaDrxAnalysis(${channel})" style="background:var(--accent)">
+            DRX OFF
           </button>
           <button class="trigger-btn" id="inaCh${channel}PauseBtn" onclick="toggleInaPause(${channel})" style="background:var(--accent)">
             PAUSE
+          </button>
+          <button class="trigger-btn" id="inaCh${channel}ExportBtn" onclick="exportInaChannelCsv(${channel})" style="background:var(--accent)">
+            EXPORT
           </button>
         </div>
       </div>
@@ -826,7 +2107,14 @@ function initInaPanel() {
 
 function initInaChart(channel) {
   inaPaused[channel] = false;
+  inaDrxEnabled[channel] = false;
+  inaDrxResults[channel] = null;
+  inaDrxSuspended[channel] = false;
+  inaDrxLastAnalysisMs[channel] = 0;
+  inaDrxAnalysisTimers[channel] = null;
+  inaDrxAnalysisRunning[channel] = false;
   inaSampleBuffers[channel] = [];
+  inaChartTimestamps[channel] = [];
   inaChartData[channel] = {
     labels: [],
     datasets: [
@@ -844,6 +2132,26 @@ function initInaChart(channel) {
         label: `CH${channel} 3s Avg (mA)`,
         data: [],
         borderColor: '#ff9800',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+      {
+        label: `CH${channel} DRX Trough Samples (mA)`,
+        data: [],
+        borderColor: '#00bcd4',
+        backgroundColor: '#00bcd4',
+        borderWidth: 0,
+        pointRadius: 1.7,
+        pointHoverRadius: 2.5,
+        showLine: false,
+      },
+      {
+        label: `CH${channel} DRX Trough Avg (mA)`,
+        data: [],
+        borderColor: '#00bcd4',
+        borderDash: [4, 4],
         borderWidth: 1.5,
         pointRadius: 0,
         fill: false,
@@ -875,11 +2183,113 @@ function initInaChart(channel) {
       plugins: { legend: { display: false } },
     },
   });
+  updateAvgWindowMarker(inaCharts[channel], inaChartTimestamps[channel], AVG_WINDOW_S);
+  clearInaDrxTroughDisplay(channel, 'DRX off');
+  setInaDrxSummary(channel, 'OFF', '', 'DRX detector disabled');
+  updateInaDrxButton(channel);
+}
+
+function initIna226Chart() {
+  ina226SampleBuffer = [];
+  ina226ChartTimestamps = [];
+  ina226ChartData = {
+    labels: [],
+    datasets: [
+      {
+        label: 'External Current (mA)',
+        data: [],
+        borderColor: '#4caf50',
+        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+      {
+        label: 'External 3s Avg (mA)',
+        data: [],
+        borderColor: '#ff9800',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+      {
+        label: 'DRX Trough Samples (mA)',
+        data: [],
+        borderColor: '#00bcd4',
+        backgroundColor: '#00bcd4',
+        borderWidth: 0,
+        pointRadius: 1.7,
+        pointHoverRadius: 2.5,
+        showLine: false,
+      },
+      {
+        label: 'DRX Trough Avg (mA)',
+        data: [],
+        borderColor: '#00bcd4',
+        borderDash: [4, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      },
+    ],
+  };
+  ina226Chart = new Chart(document.getElementById('ina226Chart'), {
+    type: 'line',
+    data: ina226ChartData,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      interaction: { intersect: false, mode: 'nearest' },
+      scales: {
+        x: {
+          display: true,
+          ticks: { color: '#7a7f8d', maxTicksLimit: 6, font: { size: 10 } },
+          grid: { color: '#2a2d3a' },
+        },
+        y: {
+          display: true,
+          beginAtZero: true,
+          ticks: { color: '#7a7f8d', font: { size: 10 } },
+          grid: { color: '#2a2d3a' },
+        },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+  updateAvgWindowMarker(ina226Chart, ina226ChartTimestamps, AVG_WINDOW_S);
+}
+
+function flushIna226ChartUpdate() {
+  ina226ChartUpdateTimer = null;
+  if (!ina226Chart) return;
+  ina226LastChartUpdateMs = monotonicNowMs();
+  ina226Chart.update('none');
+}
+
+function requestIna226ChartUpdate() {
+  if (!ina226Chart) return;
+  const now = monotonicNowMs();
+  const remainingMs = INA226_CHART_UPDATE_INTERVAL_MS - (now - ina226LastChartUpdateMs);
+  if (remainingMs <= 0) {
+    if (ina226ChartUpdateTimer != null) {
+      clearTimeout(ina226ChartUpdateTimer);
+      ina226ChartUpdateTimer = null;
+    }
+    flushIna226ChartUpdate();
+    return;
+  }
+  if (ina226ChartUpdateTimer != null) return;
+  ina226ChartUpdateTimer = setTimeout(flushIna226ChartUpdate, Math.max(16, remainingMs));
 }
 
 function addInaChartPoint(d, redraw = true) {
   if (!d || d.available === false || d.channel == null || d.current_ua == null) return;
   const channel = Number(d.channel);
+  if (!inaEnabledChannels.includes(channel)) return;
   if (inaPaused[channel]) return;
   const chartData = inaChartData[channel];
   const chart = inaCharts[channel];
@@ -891,10 +2301,13 @@ function addInaChartPoint(d, redraw = true) {
     : inaHighspeedChannels;
   const sampleMode = sampleHighspeedChannels.includes(channel) ? 'highspeed' : 'low';
   chartData.labels.push(label);
+  inaChartTimestamps[channel].push(ts);
   chartData.datasets[0].data.push(Number(d.current_ua) / 1000);
   chartData.datasets[1].data.push(
     d.window_avg_current_ua != null ? Number(d.window_avg_current_ua) / 1000 : null
   );
+  chartData.datasets[2].data.push(null);
+  chartData.datasets[3].data.push(null);
   inaSampleBuffers[channel].push({
     channel,
     sample_mode: sampleMode,
@@ -908,13 +2321,19 @@ function addInaChartPoint(d, redraw = true) {
     window_avg_current_ua: d.window_avg_current_ua != null ? Number(d.window_avg_current_ua).toFixed(1) : '',
     window_avg_current_ma: d.window_avg_current_ua != null ? (Number(d.window_avg_current_ua) / 1000).toFixed(6) : '',
     avg_window_s: d.avg_window_s != null ? Number(d.avg_window_s).toFixed(1) : '',
+    drx_trough_selected: false,
+    drx_trough_avg_ma: '',
+    drx_trough_avg_mw: '',
   });
   if (chartData.labels.length > INA_MAX_POINTS) {
     chartData.labels.shift();
-    chartData.datasets[0].data.shift();
-    chartData.datasets[1].data.shift();
+    inaChartTimestamps[channel].shift();
+    for (const dataset of chartData.datasets) {
+      dataset.data.shift();
+    }
     inaSampleBuffers[channel].shift();
   }
+  updateAvgWindowMarker(chart, inaChartTimestamps[channel], d.avg_window_s);
   if (redraw) chart.update();
 }
 
@@ -924,13 +2343,119 @@ function csvCell(value) {
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
+function downloadCsv(rows, columns, filename, messageText) {
+  const message = document.getElementById('inaMessage');
+  const csvRows = [columns.join(',')];
+  for (const row of rows) {
+    csvRows.push(columns.map(column => csvCell(row[column])).join(','));
+  }
+  const csv = `${csvRows.join('\n')}\n`;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  if (message) message.textContent = messageText;
+}
+
 function exportInaHighspeedCsv() {
   const message = document.getElementById('inaMessage');
   const channels = (inaHighspeedChannels || [])
     .map(Number)
     .filter(channel => inaSampleBuffers[channel] && inaSampleBuffers[channel].length > 0);
   const columns = [
+    'source',
     'channel',
+    'monitor',
+    'device_type',
+    'requested_device_type',
+    'address',
+    'sample_mode',
+    'iso_time',
+    'epoch_s',
+    'voltage_mv',
+    'shunt_uv',
+    'adc_range_mv',
+    'rail_mode',
+    'rail_label',
+    'current_ua',
+    'current_ma',
+    'power_uw',
+    'power_mw',
+    'window_avg_current_ua',
+    'window_avg_current_ma',
+    'avg_window_s',
+    'drx_trough_selected',
+    'drx_trough_avg_ma',
+    'drx_trough_avg_mw',
+  ];
+  const samples = [];
+  const sourceLabels = new Set();
+  for (const channel of channels) {
+    for (const sample of inaSampleBuffers[channel]) {
+      if (sample.sample_mode === 'highspeed') {
+        sourceLabels.add(`ch${channel}`);
+        samples.push({
+          source: 'ina219',
+          monitor: 'ina219',
+          device_type: 'ina219',
+          ...sample,
+        });
+      }
+    }
+  }
+  if (ina226SampleBuffer.length > 0) {
+    const externalDevice = ina226SampleBuffer[ina226SampleBuffer.length - 1].device_type || 'external';
+    sourceLabels.add(externalDevice);
+    for (const sample of ina226SampleBuffer) {
+      samples.push({
+        source: 'external_monitor',
+        channel: '',
+        sample_mode: 'highspeed',
+        ...sample,
+      });
+    }
+  }
+  samples.sort((a, b) => (
+    Number(a.epoch_s) - Number(b.epoch_s)
+    || String(a.source || '').localeCompare(String(b.source || ''))
+    || Number(a.channel || 0) - Number(b.channel || 0)
+  ));
+  if (samples.length === 0) {
+    if (message) message.textContent = 'no high-speed samples to export';
+    return;
+  }
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const sourceLabel = [...sourceLabels].join('-') || 'samples';
+  downloadCsv(
+    samples,
+    columns,
+    `power-highspeed-${sourceLabel}-${stamp}.csv`,
+    `exported ${samples.length} high-speed samples from ${sourceLabel}`
+  );
+}
+
+function exportInaChannelCsv(channel) {
+  const message = document.getElementById('inaMessage');
+  if (inaDrxEnabled[channel] && inaPaused[channel]) {
+    runInaDrxTroughAnalysis(channel, true, true);
+  }
+  const buffer = inaSampleBuffers[channel] || [];
+  if (buffer.length === 0) {
+    if (message) message.textContent = `CH${channel} has no samples to export`;
+    return;
+  }
+  const columns = [
+    'source',
+    'channel',
+    'monitor',
+    'device_type',
+    'address',
     'sample_mode',
     'iso_time',
     'epoch_s',
@@ -942,36 +2467,122 @@ function exportInaHighspeedCsv() {
     'window_avg_current_ua',
     'window_avg_current_ma',
     'avg_window_s',
+    'drx_trough_selected',
+    'drx_trough_avg_ma',
+    'drx_trough_avg_mw',
   ];
-  const samples = [];
-  for (const channel of channels) {
-    for (const sample of inaSampleBuffers[channel]) {
-      if (sample.sample_mode === 'highspeed') samples.push(sample);
-    }
+  const addressEl = document.getElementById(`inaCh${channel}CfgSummary`);
+  const address = addressEl ? addressEl.textContent : '';
+  const samples = buffer.map(sample => ({
+    source: 'ina219',
+    monitor: 'ina219',
+    device_type: 'ina219',
+    address,
+    ...sample,
+  }));
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  downloadCsv(
+    samples,
+    columns,
+    `ina219-ch${channel}-${stamp}.csv`,
+    `exported ${samples.length} CH${channel} samples`
+  );
+}
+
+function trimIna226BuffersToMax() {
+  if (!ina226ChartData || !ina226ChartTimestamps.length) return;
+  const trimCount = ina226ChartData.labels.length - INA226_MAX_POINTS;
+  if (trimCount <= 0) return;
+
+  ina226ChartData.labels.splice(0, trimCount);
+  ina226ChartTimestamps.splice(0, trimCount);
+  for (const dataset of ina226ChartData.datasets) {
+    dataset.data.splice(0, trimCount);
   }
-  samples.sort((a, b) => Number(a.epoch_s) - Number(b.epoch_s) || a.channel - b.channel);
-  if (samples.length === 0) {
-    message.textContent = 'no high-speed samples to export';
+  ina226SampleBuffer.splice(0, trimCount);
+}
+
+function addIna226ChartPoint(d, redraw = true) {
+  if (!d || d.available === false || d.current_ua == null) return;
+  updateIna226Power(d);
+  if (ina226Paused || !ina226ChartData || !ina226Chart) return;
+  const ts = d.ts != null ? Number(d.ts) * 1000 : Date.now();
+  const label = new Date(ts).toISOString().slice(11, 23);
+  ina226ChartData.labels.push(label);
+  ina226ChartTimestamps.push(ts);
+  ina226ChartData.datasets[0].data.push(Number(d.current_ua) / 1000);
+  ina226ChartData.datasets[1].data.push(
+    d.window_avg_current_ua != null ? Number(d.window_avg_current_ua) / 1000 : null
+  );
+  ina226ChartData.datasets[2].data.push(null);
+  ina226ChartData.datasets[3].data.push(null);
+  const deviceType = normalizeExternalMonitorType(d.device_type || d.monitor || 'auto');
+  ina226SampleBuffer.push({
+    monitor: deviceType,
+    device_type: deviceType,
+    requested_device_type: d.requested_device_type || '',
+    address: d.address || '',
+    iso_time: new Date(ts).toISOString(),
+    epoch_s: Number(ts / 1000).toFixed(6),
+    voltage_mv: d.voltage_mv != null ? Number(d.voltage_mv).toFixed(1) : '',
+    shunt_uv: d.shunt_uv != null ? Number(d.shunt_uv).toFixed(1) : '',
+    adc_range_mv: d.adc_range_mv != null ? Number(d.adc_range_mv).toFixed(2) : '',
+    rail_mode: d.rail_mode || '',
+    rail_label: d.rail_label || '',
+    current_ua: Number(d.current_ua).toFixed(1),
+    current_ma: (Number(d.current_ua) / 1000).toFixed(6),
+    power_uw: d.power_uw != null ? Number(d.power_uw).toFixed(1) : '',
+    power_mw: d.power_uw != null ? (Number(d.power_uw) / 1000).toFixed(6) : '',
+    window_avg_current_ua: d.window_avg_current_ua != null ? Number(d.window_avg_current_ua).toFixed(1) : '',
+    window_avg_current_ma: d.window_avg_current_ua != null ? (Number(d.window_avg_current_ua) / 1000).toFixed(6) : '',
+    avg_window_s: d.avg_window_s != null ? Number(d.avg_window_s).toFixed(1) : '',
+    drx_trough_selected: false,
+    drx_trough_avg_ma: '',
+    drx_trough_avg_mw: '',
+  });
+  if (redraw) trimIna226BuffersToMax();
+  updateAvgWindowMarker(ina226Chart, ina226ChartTimestamps, d.avg_window_s);
+  if (redraw) requestIna226ChartUpdate();
+}
+
+function exportIna226Csv() {
+  const message = document.getElementById('inaMessage');
+  const columns = [
+    'monitor',
+    'device_type',
+    'requested_device_type',
+    'address',
+    'iso_time',
+    'epoch_s',
+    'voltage_mv',
+    'shunt_uv',
+    'adc_range_mv',
+    'rail_mode',
+    'rail_label',
+    'current_ua',
+    'current_ma',
+    'power_uw',
+    'power_mw',
+    'window_avg_current_ua',
+    'window_avg_current_ma',
+    'avg_window_s',
+    'drx_trough_selected',
+    'drx_trough_avg_ma',
+    'drx_trough_avg_mw',
+  ];
+  if (ina226SampleBuffer.length === 0) {
+    message.textContent = 'no external monitor samples to export';
     return;
   }
 
-  const rows = [columns.join(',')];
-  for (const sample of samples) {
-    rows.push(columns.map(column => csvCell(sample[column])).join(','));
-  }
-  const csv = `${rows.join('\n')}\n`;
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const channelLabel = [...new Set(samples.map(sample => `ch${sample.channel}`))].join('-');
-  link.href = url;
-  link.download = `ina219-highspeed-${channelLabel}-${stamp}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-  message.textContent = `exported ${samples.length} high-speed samples`;
+  const deviceLabel = ina226SampleBuffer[ina226SampleBuffer.length - 1].device_type || 'external';
+  downloadCsv(
+    ina226SampleBuffer,
+    columns,
+    `${deviceLabel}-external-monitor-${stamp}.csv`,
+    `exported ${ina226SampleBuffer.length} external monitor samples`
+  );
 }
 
 function toggleInaPause(channel) {
@@ -981,12 +2592,43 @@ function toggleInaPause(channel) {
 function setInaPause(channel, paused) {
   const btn = document.getElementById(`inaCh${channel}PauseBtn`);
   inaPaused[channel] = paused;
-  if (paused) {
+  if (btn && paused) {
     btn.textContent = 'RESUME';
     btn.style.background = 'var(--green)';
-  } else {
+  } else if (btn) {
     btn.textContent = 'PAUSE';
     btn.style.background = 'var(--accent)';
+  }
+  if (inaDrxAnalysisTimers[channel] != null) {
+    clearTimeout(inaDrxAnalysisTimers[channel]);
+    inaDrxAnalysisTimers[channel] = null;
+  }
+  if (paused && inaDrxEnabled[channel]) {
+    runInaDrxTroughAnalysis(channel, true, true);
+  } else if (!paused && inaDrxEnabled[channel]) {
+    clearInaDrxTroughDisplay(channel, 'DRX armed', true);
+    setInaDrxSummary(channel, 'ARM', 'ok', 'DRX detector enabled');
+    if (inaCharts[channel]) inaCharts[channel].update('none');
+    scheduleInaDrxTroughAnalysis(channel, false);
+  }
+}
+
+function toggleIna226Pause() {
+  ina226Paused = !ina226Paused;
+  const btn = document.getElementById('ina226PauseBtn');
+  btn.textContent = ina226Paused ? 'RESUME' : 'PAUSE';
+  btn.style.background = ina226Paused ? 'var(--green)' : 'var(--accent)';
+  if (ina226Paused && drxAnalysisTimer != null) {
+    clearTimeout(drxAnalysisTimer);
+    drxAnalysisTimer = null;
+  }
+  if (ina226Paused && drxEnabled) {
+    runDrxTroughAnalysis(true, true);
+  } else if (!ina226Paused && drxEnabled) {
+    clearDrxTroughDisplay('DRX armed', true);
+    setDrxSummary('ARM', 'ok', 'DRX detector enabled');
+    requestIna226ChartUpdate();
+    scheduleDrxTroughAnalysis(false);
   }
 }
 
@@ -994,6 +2636,9 @@ function toggleInaPauseAll() {
   inaAllPaused = !inaAllPaused;
   for (const channel of INA_CHANNELS) {
     setInaPause(channel, inaAllPaused);
+  }
+  if (ina226Paused !== inaAllPaused) {
+    toggleIna226Pause();
   }
   const btn = document.getElementById('inaPauseAllBtn');
   btn.textContent = inaAllPaused ? 'RESUME ALL' : 'PAUSE ALL';
@@ -1004,7 +2649,7 @@ async function setInaHighspeedFromUi() {
   const message = document.getElementById('inaMessage');
   const selected = INA_CHANNELS.filter(channel => {
     const checkbox = document.getElementById(`inaCh${channel}HighSpeed`);
-    return checkbox && checkbox.checked;
+    return checkbox && checkbox.checked && inaEnabledChannels.includes(channel);
   });
   if (selected.length === 0) {
     message.textContent = 'select at least one high-speed channel';
@@ -1026,31 +2671,64 @@ async function setInaHighspeedFromUi() {
   }
 }
 
+async function setInaEnabledFromUi() {
+  const message = document.getElementById('inaMessage');
+  const selected = INA_CHANNELS.filter(channel => {
+    const checkbox = document.getElementById(`inaCh${channel}Enabled`);
+    return checkbox && checkbox.checked;
+  });
+  try {
+    const resp = await fetch('/api/ina219/enabled', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channels: selected }),
+    });
+    const data = await resp.json();
+    updateIna(data);
+    message.textContent = data.status === 'ok'
+      ? (selected.length ? `enabled ${selected.map(ch => `CH${ch}`).join(', ')}` : 'all channels disabled')
+      : (data.error || 'failed');
+  } catch (e) {
+    message.textContent = 'channel enable update failed';
+    updateInaHighspeedInputs();
+  }
+}
+
 function updateInaHighspeedInputs() {
   const selected = new Set((inaHighspeedChannels || []).map(Number));
+  const enabled = new Set((inaEnabledChannels || []).map(Number));
   for (const channel of INA_CHANNELS) {
+    const enabledCheckbox = document.getElementById(`inaCh${channel}Enabled`);
     const checkbox = document.getElementById(`inaCh${channel}HighSpeed`);
     const mode = document.getElementById(`inaCh${channel}Mode`);
     const row = document.getElementById(`inaCh${channel}Row`);
-    const highspeed = selected.has(channel);
+    const channelEnabled = enabled.has(channel);
+    const highspeed = channelEnabled && selected.has(channel);
+    if (enabledCheckbox) {
+      enabledCheckbox.checked = channelEnabled;
+    }
     if (checkbox) {
       checkbox.checked = highspeed;
+      checkbox.disabled = !channelEnabled;
     }
     if (mode) {
-      mode.textContent = highspeed ? 'HIGH SPEED' : 'LOW SPEED';
+      mode.textContent = channelEnabled ? (highspeed ? 'HIGH SPEED' : 'LOW SPEED') : 'DISABLED';
       mode.className = 'ina-mode-badge' + (highspeed ? ' highspeed' : '');
     }
     if (row) {
       row.classList.toggle('highspeed', highspeed);
+      row.classList.toggle('disabled', !channelEnabled);
     }
   }
 }
 
-function updateInaPower(d) {
+function updateInaPower(d, force = false) {
   if (!d) return;
-  const channel = d.channel || inaActiveChannel || 1;
+  const channel = Number(d.channel || inaActiveChannel || 1);
+  if (!force && inaPaused[channel]) return;
   const voltage = document.getElementById(`inaCh${channel}Voltage`);
   const current = document.getElementById(`inaCh${channel}Current`);
+  const avgCurrent = document.getElementById(`inaCh${channel}AvgCurrent`);
   const power = document.getElementById(`inaCh${channel}Power`);
   if (d.voltage_mv != null) {
     if (voltage) voltage.textContent = Number(d.voltage_mv).toFixed(0);
@@ -1058,8 +2736,19 @@ function updateInaPower(d) {
   if (d.current_ua != null) {
     if (current) current.textContent = (Number(d.current_ua) / 1000).toFixed(1);
   }
+  if (avgCurrent) {
+    const avg = d.window_avg_current_ua != null ? d.window_avg_current_ua : d.avg_current_ua;
+    if (avg != null) avgCurrent.textContent = (Number(avg) / 1000).toFixed(1);
+  }
   if (d.power_uw != null) {
     if (power) power.textContent = (Number(d.power_uw) / 1000).toFixed(1);
+  }
+}
+
+function clearInaPower(channel) {
+  for (const suffix of ['Voltage', 'Current', 'AvgCurrent', 'Power']) {
+    const el = document.getElementById(`inaCh${channel}${suffix}`);
+    if (el) el.textContent = '--';
   }
 }
 
@@ -1077,19 +2766,72 @@ function normalizeInaPayload(d) {
   return { available: false, channels: [], error: d.error };
 }
 
+function updateInaChannelChips(d, detail = '') {
+  const channel = Number(d && d.channel);
+  if (!channel) return;
+  if (!d || d.enabled === false) {
+    const title = d && d.error ? d.error : 'Channel disabled';
+    setInaChannelSummary(channel, 'Cfg', 'OFF', '', title);
+    setInaChannelSummary(channel, 'Cal', 'OFF', '', title);
+    setInaChannelSummary(channel, 'Rate', '--', '', title);
+    setInaChannelSummary(channel, 'Range', '--', '', title);
+    return;
+  }
+  if (!d.available) {
+    const title = d.error || 'Channel unavailable';
+    setInaChannelSummary(channel, 'Cfg', 'MISS', 'bad', title);
+    setInaChannelSummary(channel, 'Cal', 'MISS', 'bad', title);
+    setInaChannelSummary(channel, 'Rate', '--', '', title);
+    setInaChannelSummary(channel, 'Range', '--', '', title);
+    return;
+  }
+
+  const address = d.address || '0x??';
+  const highspeed = inaHighspeedChannels.includes(channel);
+  const shuntRange = d.shunt_range_a != null ? `+/-${Number(d.shunt_range_a).toFixed(1)}A` : '+/-?A';
+  const lsb = d.current_lsb_ua != null ? `${Number(d.current_lsb_ua).toFixed(1)}uA/bit` : '--';
+  const warn = d.overrange_expected ? 'Overrange risk' : '';
+  setInaChannelSummary(channel, 'Cfg', address, 'ok', detail || `${address} configured`);
+  setInaChannelSummary(channel, 'Cal', d.calibrated ? 'OK' : 'LOST', d.calibrated ? 'ok' : 'warn', d.calibrated ? 'Calibrated' : 'Calibration register is zero');
+  setInaChannelSummary(channel, 'Rate', highspeed ? 'HIGH' : 'LOW', highspeed ? 'ok' : '', highspeed ? 'High-speed sampling' : 'Low-speed status sampling');
+  setInaChannelSummary(channel, 'Range', shuntRange, d.overrange_expected ? 'warn' : 'ok', `${shuntRange}, ${lsb}${warn ? `, ${warn}` : ''}`);
+}
+
 function updateInaChannel(d) {
   const channel = d.channel;
   const dot = document.getElementById(`inaCh${channel}Dot`);
-  const cal = document.getElementById(`inaCh${channel}Cal`);
   const meta = document.getElementById(`inaCh${channel}Meta`);
-  if (!dot || !cal || !meta) return;
+  if (!dot || !meta) return;
+
+  if (d.enabled === false) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = 'Channel disabled';
+    clearInaPower(channel);
+    if (inaDrxEnabled[channel]) {
+      setInaDrxEnabled(channel, false);
+    } else {
+      clearInaDrxTroughDisplay(channel, 'DRX off');
+      setInaDrxSummary(channel, 'OFF', '', 'DRX detector disabled');
+    }
+    updateInaChannelChips(d);
+    meta.textContent = `${d.address || '0x??'} disabled`;
+    meta.title = meta.textContent;
+    return;
+  }
 
   if (!d.available) {
     dot.className = 'driver-indicator unavailable';
     dot.title = d.error || 'Channel unavailable';
-    cal.textContent = 'OFF';
-    cal.style.color = 'var(--red)';
+    clearInaPower(channel);
+    if (inaDrxEnabled[channel]) {
+      setInaDrxEnabled(channel, false);
+    } else {
+      clearInaDrxTroughDisplay(channel, 'DRX unavailable');
+      setInaDrxSummary(channel, 'MISS', 'bad', d.error || 'Channel unavailable');
+    }
+    updateInaChannelChips(d);
     meta.textContent = d.error || '--';
+    meta.title = meta.textContent;
     return;
   }
 
@@ -1099,8 +2841,6 @@ function updateInaChannel(d) {
   }
   dot.className = 'driver-indicator' + (d.calibrated ? ' active' : ' unavailable');
   dot.title = d.calibrated ? 'Calibrated' : 'Calibration register is zero';
-  cal.textContent = d.calibrated ? 'OK' : 'LOST';
-  cal.style.color = d.calibrated ? 'var(--green)' : 'var(--red)';
 
   const address = d.address || '0x??';
   const shunt = d.shunt_ohms != null ? `${Number(d.shunt_ohms).toFixed(4)} ohm` : '? ohm';
@@ -1109,7 +2849,10 @@ function updateInaChannel(d) {
   const max = d.max_current_a != null ? `${Number(d.max_current_a).toFixed(1)} A max` : '? A max';
   const calHex = d.calibration != null ? `0x${Number(d.calibration).toString(16).padStart(4, '0')}` : '--';
   const warn = d.overrange_expected ? ' overrange risk' : '';
-  meta.textContent = `${address} ${shunt} ${shuntRange} ${max} ${lsb} cal ${calHex}${warn}`;
+  const detail = `${address} ${shunt} ${shuntRange} ${max} ${lsb} cal ${calHex}${warn}`;
+  updateInaChannelChips(d, detail);
+  meta.textContent = `${shunt} ${shuntRange} ${lsb}`;
+  meta.title = detail;
 
   const shuntInput = document.getElementById(`inaCh${channel}Shunt`);
   const maxInput = document.getElementById(`inaCh${channel}MaxCurrent`);
@@ -1129,8 +2872,22 @@ function updateIna(raw) {
   const channels = d.channels || [];
   const byChannel = new Map(channels.map(ch => [Number(ch.channel), ch]));
   inaActiveChannel = d.active_channel || inaActiveChannel || (channels[0] && channels[0].channel);
+  inaEnabledChannels = Array.isArray(d.enabled_channels)
+    ? d.enabled_channels.map(Number)
+    : channels.filter(ch => ch.enabled !== false).map(ch => Number(ch.channel));
   inaHighspeedChannels = Array.isArray(d.highspeed_channels) ? d.highspeed_channels.map(Number) : inaHighspeedChannels;
   updateInaHighspeedInputs();
+
+  if (!d || (!d.available && inaEnabledChannels.length === 0)) {
+    dot.className = 'driver-indicator';
+    dot.title = 'All channels disabled';
+    range.textContent = '--';
+    message.textContent = 'all channels disabled';
+    for (const channel of INA_CHANNELS) {
+      updateInaChannel(byChannel.get(channel) || { available: false, enabled: false, channel, error: 'disabled' });
+    }
+    return;
+  }
 
   if (!d || !d.available) {
     dot.className = 'driver-indicator unavailable';
@@ -1153,8 +2910,10 @@ function updateIna(raw) {
   for (const channel of INA_CHANNELS) {
     updateInaChannel(byChannel.get(channel) || { available: false, channel, error: 'disabled' });
   }
-  const configured = channels.map(ch => `CH${ch.channel}`).join(', ');
-  message.textContent = configured ? `configured ${configured}` : '--';
+  const enabledLabel = inaEnabledChannels.length
+    ? inaEnabledChannels.map(ch => `CH${ch}`).join(', ')
+    : 'none';
+  message.textContent = `enabled ${enabledLabel}`;
 }
 
 async function loadInaStatus(force = false) {
@@ -1188,7 +2947,7 @@ async function reconfigureIna(channel) {
   }
   setTimeout(() => {
     btn.disabled = false;
-    btn.textContent = `CAL CH${channel}`;
+    btn.textContent = 'APPLY';
   }, 1000);
 }
 
@@ -1234,6 +2993,419 @@ async function reconfigureInaAll() {
     btn.disabled = false;
     btn.textContent = 'CAL ALL';
   }, 1000);
+}
+
+function readIna226ConfigInput() {
+  const message = document.getElementById('inaMessage');
+  const deviceType = document.getElementById('ina226DeviceType').value;
+  const address = document.getElementById('ina226Address').value.trim();
+  const shunt = Number(document.getElementById('ina226Shunt').value);
+  const railMode = document.getElementById('ina226RailMode').value;
+  const maxCurrent = Number(document.getElementById('ina226MaxCurrent').value);
+  const sampleRate = Number(document.getElementById('ina226SampleRate').value);
+  const averages = Number(document.getElementById('ina226Averages').value);
+  const conversionTime = Number(document.getElementById('ina226ConversionTime').value);
+  const adcRange = Number(document.getElementById('ina226AdcRange').value);
+  const addressValue = Number(address.startsWith('0x') || address.startsWith('0X') ? parseInt(address, 16) : address);
+  if (!Number.isInteger(addressValue) || addressValue < 0x03 || addressValue > 0x77) {
+    message.textContent = 'external monitor invalid address';
+    return null;
+  }
+  if (!Number.isFinite(shunt) || shunt <= 0) {
+    message.textContent = 'external monitor invalid shunt';
+    return null;
+  }
+  if (!Number.isFinite(maxCurrent) || maxCurrent <= 0) {
+    message.textContent = 'external monitor invalid max current';
+    return null;
+  }
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0 || sampleRate > 1000) {
+    message.textContent = 'external monitor invalid poll Hz';
+    return null;
+  }
+  if (![40.96, 163.84].includes(adcRange)) {
+    message.textContent = 'external monitor invalid range';
+    return null;
+  }
+  return {
+    device_type: deviceType,
+    address,
+    rail_mode: railMode,
+    shunt_ohms: shunt,
+    max_current_a: maxCurrent,
+    sample_rate_hz: sampleRate,
+    averages,
+    conversion_time_us: conversionTime,
+    adc_range_mv: adcRange,
+  };
+}
+
+async function configureIna226(reset) {
+  const btn = document.getElementById(reset ? 'ina226ResetBtn' : 'ina226ApplyBtn');
+  const message = document.getElementById('inaMessage');
+  const payload = readIna226ConfigInput();
+  if (!payload) return;
+  payload.reset = reset;
+  btn.disabled = true;
+  btn.textContent = reset ? 'RESET...' : 'APPLY...';
+  try {
+    const resp = await fetch('/api/external-monitor/configure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json();
+    updateIna226(data);
+    message.textContent = data.status === 'ok'
+      ? (reset ? 'external monitor reset' : 'external monitor configured')
+      : (data.error || 'external monitor failed');
+  } catch (e) {
+    updateIna226({ available: false, error: 'external monitor configure failed' });
+  }
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = reset ? 'RESET' : 'APPLY';
+  }, 1000);
+}
+
+async function calibrateIna226Shunt() {
+  const btn = document.getElementById('ina226CalShuntBtn');
+  const message = document.getElementById('inaMessage');
+  const input = document.getElementById('ina226ReferenceCurrentMa');
+  const referenceCurrentMa = input ? Number(input.value) : NaN;
+  if (!Number.isFinite(referenceCurrentMa) || Math.abs(referenceCurrentMa) < 1) {
+    if (message) message.textContent = 'enter nonzero reference current in mA';
+    return;
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'CAL...';
+  }
+  try {
+    const resp = await fetch('/api/external-monitor/calibrate-shunt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reference_current_ma: referenceCurrentMa,
+        samples: 128,
+        sample_delay_s: 0.001,
+      }),
+    });
+    const data = await resp.json();
+    updateIna226(data);
+    if (data.status === 'ok') {
+      const shunt = Number(data.shunt_ohms || data.calibration_new_shunt_ohms);
+      message.textContent = Number.isFinite(shunt)
+        ? `external monitor shunt ${shunt.toFixed(6)} ohm`
+        : 'external monitor shunt calibrated';
+    } else {
+      message.textContent = data.error || 'external monitor shunt calibration failed';
+    }
+  } catch (e) {
+    updateIna226({ available: false, error: 'external monitor shunt calibration failed' });
+    if (message) message.textContent = 'external monitor shunt calibration failed';
+  }
+  setTimeout(() => {
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = 'CAL SHUNT';
+  }, 1000);
+}
+
+function updateIna226Power(d, force = false) {
+  if (!d || (!force && ina226Paused)) return;
+  const title = document.getElementById('ina226Title');
+  const voltage = document.getElementById('ina226Voltage');
+  const current = document.getElementById('ina226Current');
+  const avgCurrent = document.getElementById('ina226AvgCurrent');
+  const power = document.getElementById('ina226Power');
+  if (d.rail_label && title) {
+    const deviceType = normalizeExternalMonitorType(d.device_type || d.monitor);
+    title.textContent = `${externalMonitorLabel(deviceType)} ${d.rail_label}`;
+  }
+  if (d.voltage_mv != null && voltage) {
+    voltage.textContent = Number(d.voltage_mv).toFixed(0);
+  }
+  if (d.current_ua != null && current) {
+    current.textContent = (Number(d.current_ua) / 1000).toFixed(1);
+  }
+  if (avgCurrent) {
+    const avg = d.window_avg_current_ua != null ? d.window_avg_current_ua : d.avg_current_ua;
+    if (avg != null) avgCurrent.textContent = (Number(avg) / 1000).toFixed(1);
+  }
+  if (d.power_uw != null && power) {
+    power.textContent = (Number(d.power_uw) / 1000).toFixed(1);
+  }
+}
+
+function clearIna226Power() {
+  for (const id of ['ina226Voltage', 'ina226Current', 'ina226AvgCurrent', 'ina226Power']) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '--';
+  }
+}
+
+function updateIna226(d) {
+  const dot = document.getElementById('ina226Dot');
+  const meta = document.getElementById('ina226Meta');
+  const mode = document.getElementById('ina226Mode');
+  const row = document.getElementById('ina226Row');
+  const title = document.getElementById('ina226Title');
+  if (!dot || !meta || !mode) return;
+
+  const address = d && d.address ? d.address : '0x44';
+  const deviceType = normalizeExternalMonitorType(d && d.device_type ? d.device_type : 'auto');
+  const requestedDeviceType = normalizeExternalMonitorType(
+    d && d.requested_device_type ? d.requested_device_type : deviceType
+  );
+  const displayDeviceType = deviceType !== 'auto' ? deviceType : requestedDeviceType;
+  const deviceLabel = externalMonitorLabel(displayDeviceType);
+  const sampleRate = d && d.sample_rate_hz != null ? Number(d.sample_rate_hz) : 1000;
+  const railLabel = d && d.rail_label ? d.rail_label : '4V';
+  const railMode = d && d.rail_mode ? d.rail_mode : '4v';
+  mode.textContent = `${sampleRate.toFixed(0)} HZ`;
+  if (title) title.textContent = `${deviceLabel} ${railLabel}`;
+
+  if (!d || !d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = d && d.error ? d.error : 'External monitor unavailable';
+    clearIna226Power();
+    clearDrxTroughDisplay('DRX trough unavailable');
+    const detail = d && d.error ? `${address} ${d.error}` : `${address} unavailable`;
+    updateExternalMonitorChips(d, detail);
+    meta.textContent = detail;
+    meta.title = detail;
+    if (row) row.classList.remove('highspeed');
+  } else {
+    updateIna226Power(d);
+    dot.className = 'driver-indicator' + (d.calibrated ? ' active' : ' unavailable');
+    dot.title = d.calibrated ? 'Calibrated' : 'Calibration register is zero';
+    if (row) row.classList.add('highspeed');
+
+    const shunt = d.shunt_ohms != null ? `${Number(d.shunt_ohms).toFixed(4)} ohm` : '? ohm';
+    const shuntRange = d.shunt_range_a != null ? `+/-${Number(d.shunt_range_a).toFixed(1)} A` : '+/-? A';
+    const lsb = d.current_lsb_ua != null ? `${Number(d.current_lsb_ua).toFixed(1)} uA/bit` : '--';
+    const calHex = d.calibration != null ? `0x${Number(d.calibration).toString(16).padStart(4, '0')}` : '--';
+    const conv = d.conversion_time_us != null ? `${Number(d.conversion_time_us)} us` : '? us';
+    const avg = d.averages != null ? `${Number(d.averages)} avg` : '? avg';
+    const range = d.adc_range_mv != null ? `range ${Number(d.adc_range_mv).toFixed(2)} mV` : '';
+    const shuntUv = d.shunt_uv != null ? `shunt ${Number(d.shunt_uv).toFixed(1)} uV` : '';
+    const rail = railMode === 'auto' ? `auto ${railLabel}` : railLabel;
+    const warn = d.warning ? ` ${d.warning}` : (d.overrange_expected ? ' overrange risk' : '');
+    const detail = `${address} ${rail} ${shunt} ${shuntRange} ${lsb} ${avg} ${conv} ${range} cal ${calHex} ${shuntUv}${warn}`;
+    updateExternalMonitorChips(d, detail);
+    meta.textContent = `${shunt} ${shuntRange} ${lsb}`;
+    meta.title = detail;
+  }
+
+  const deviceInput = document.getElementById('ina226DeviceType');
+  const addressInput = document.getElementById('ina226Address');
+  const railInput = document.getElementById('ina226RailMode');
+  const shuntInput = document.getElementById('ina226Shunt');
+  const maxInput = document.getElementById('ina226MaxCurrent');
+  const sampleInput = document.getElementById('ina226SampleRate');
+  const averagesInput = document.getElementById('ina226Averages');
+  const conversionInput = document.getElementById('ina226ConversionTime');
+  const adcRangeInput = document.getElementById('ina226AdcRange');
+  if (deviceInput && document.activeElement !== deviceInput) {
+    deviceInput.value = requestedDeviceType;
+  }
+  if (addressInput && document.activeElement !== addressInput && d && d.address) {
+    addressInput.value = d.address;
+  }
+  if (railInput && document.activeElement !== railInput && d && d.rail_mode) {
+    railInput.value = d.rail_mode;
+  }
+  if (shuntInput && document.activeElement !== shuntInput && d && d.shunt_ohms != null) {
+    shuntInput.value = Number(d.shunt_ohms).toString();
+  }
+  if (maxInput && document.activeElement !== maxInput && d && d.max_current_a != null) {
+    maxInput.value = Number(d.max_current_a).toString();
+  }
+  if (sampleInput && document.activeElement !== sampleInput && d && d.sample_rate_hz != null) {
+    sampleInput.value = Number(d.sample_rate_hz).toString();
+  }
+  if (averagesInput && document.activeElement !== averagesInput && d && d.averages != null) {
+    averagesInput.value = Number(d.averages).toString();
+  }
+  if (adcRangeInput && document.activeElement !== adcRangeInput && d && d.adc_range_mv != null) {
+    adcRangeInput.value = Number(d.adc_range_mv).toFixed(2);
+  }
+  if (conversionInput && document.activeElement !== conversionInput && d && d.conversion_time_us != null) {
+    setExternalMonitorConversionOptions(displayDeviceType, d.conversion_time_us);
+    conversionInput.value = Number(d.conversion_time_us).toString();
+  }
+}
+
+async function loadIna226Status() {
+  try {
+    const resp = await fetch('/api/external-monitor');
+    const data = await resp.json();
+    updateIna226(data);
+  } catch (e) {
+    updateIna226({ available: false, error: 'external monitor status unavailable' });
+  }
+}
+
+function formatUptime(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds))) return '--';
+  const totalHours = Math.floor(Number(seconds) / 3600);
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return `${days}:${String(hours).padStart(2, '0')}`;
+}
+
+function updateSystemStats(d) {
+  const dot = document.getElementById('systemDot');
+  const cpu = document.getElementById('systemCpu');
+  const mem = document.getElementById('systemMem');
+  const memText = document.getElementById('systemMemText');
+  const load = document.getElementById('systemLoad');
+  const uptime = document.getElementById('systemUptime');
+
+  if (!d || !d.available) {
+    dot.className = 'driver-indicator unavailable';
+    dot.title = d && d.error ? d.error : 'System stats unavailable';
+    cpu.textContent = '--';
+    mem.textContent = '--';
+    memText.textContent = '--';
+    load.textContent = '--';
+    uptime.textContent = '--';
+    return;
+  }
+
+  dot.className = 'driver-indicator active';
+  dot.title = 'Updated every 5 seconds';
+  cpu.textContent = formatMaybe(d.cpu_percent, 1);
+  mem.textContent = formatMaybe(d.memory_percent, 1);
+  memText.textContent = `${formatMaybe(d.memory_used_mb, 0)} / ${formatMaybe(d.memory_total_mb, 0)} MB`;
+  load.textContent = formatMaybe(d.load_1, 2);
+  uptime.textContent = formatUptime(d.uptime_s);
+}
+
+async function loadSystemStats() {
+  try {
+    const resp = await fetch('/api/system');
+    const data = await resp.json();
+    updateSystemStats(data);
+  } catch (e) {
+    updateSystemStats({ available: false, error: 'system status unavailable' });
+  }
+}
+
+// ── Power capture logger ────────────────────────────────────────────────
+
+let powerCaptureState = { state: 'idle' };
+
+function formatBytesCompact(bytes) {
+  const value = Number(bytes || 0);
+  if (value >= 1024 * 1024) return { value: (value / (1024 * 1024)).toFixed(1), unit: 'MB' };
+  if (value >= 1024) return { value: (value / 1024).toFixed(1), unit: 'KB' };
+  return { value: value.toFixed(0), unit: 'B' };
+}
+
+function updatePowerCapture(d) {
+  const previousState = powerCaptureState && powerCaptureState.state;
+  powerCaptureState = d || { state: 'idle' };
+  const dot = document.getElementById('powerCaptureDot');
+  const btn = document.getElementById('powerCaptureBtn');
+  const downloadBtn = document.getElementById('powerCaptureDownloadBtn');
+  const elapsed = document.getElementById('powerCaptureElapsed');
+  const rows = document.getElementById('powerCaptureRows');
+  const dropped = document.getElementById('powerCaptureDropped');
+  const size = document.getElementById('powerCaptureSize');
+  const sizeUnit = document.getElementById('powerCaptureSizeUnit');
+  const file = document.getElementById('powerCaptureFile');
+  const errorEl = document.getElementById('powerCaptureError');
+
+  const running = Boolean(d && d.running);
+  const complete = d && d.state === 'complete' && d.download_url;
+  const sizeParts = formatBytesCompact(d && d.size_bytes);
+
+  dot.className = 'driver-indicator' + (running ? ' active' : (d && d.state === 'error' ? ' unavailable' : ''));
+  dot.title = running ? 'Power capture running' : (d && d.state === 'error' ? 'Power capture error' : 'Capture idle');
+  btn.disabled = false;
+  btn.textContent = running ? 'STOP LOG' : 'START LOG';
+  btn.style.background = running ? 'var(--red)' : 'var(--green)';
+  downloadBtn.disabled = !complete;
+
+  elapsed.textContent = d && d.elapsed_s != null ? Number(d.elapsed_s).toFixed(0) : '--';
+  rows.textContent = d && d.rows != null ? Number(d.rows).toLocaleString() : '--';
+  dropped.textContent = d && d.dropped != null ? Number(d.dropped).toLocaleString() : '--';
+  dropped.style.color = d && Number(d.dropped) > 0 ? 'var(--red)' : 'var(--text)';
+  size.textContent = sizeParts.value;
+  sizeUnit.textContent = sizeParts.unit;
+
+  const name = d && d.filename ? d.filename : 'No capture file';
+  file.textContent = name;
+  file.title = d && d.capture_dir ? `${d.capture_dir}/${name}` : name;
+
+  if (d && d.error) {
+    errorEl.textContent = d.error;
+    errorEl.style.display = 'block';
+  } else if (d && d.stop_reason && d.stop_reason !== 'user') {
+    errorEl.textContent = `Stopped: ${d.stop_reason}`;
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+  }
+
+  if (d && d.state === 'complete' && previousState !== 'complete') {
+    loadPowerCaptures();
+  }
+}
+
+async function loadPowerCaptureStatus() {
+  try {
+    const data = await fetch('/api/captures/status').then(r => r.json());
+    updatePowerCapture(data);
+  } catch (e) {
+    updatePowerCapture({ state: 'error', error: 'capture status unavailable' });
+  }
+}
+
+async function togglePowerCapture() {
+  const btn = document.getElementById('powerCaptureBtn');
+  btn.disabled = true;
+  const running = Boolean(powerCaptureState && powerCaptureState.running);
+  btn.textContent = running ? 'STOPPING...' : 'STARTING...';
+  try {
+    const endpoint = running ? '/api/captures/stop' : '/api/captures/start';
+    const resp = await fetch(endpoint, { method: 'POST' });
+    const data = await resp.json();
+    if (!resp.ok || data.status === 'error') {
+      updatePowerCapture({ state: 'error', error: data.error || 'capture request failed' });
+      return;
+    }
+    updatePowerCapture(data);
+    if (!data.running) loadPowerCaptures();
+  } catch (e) {
+    updatePowerCapture({ state: 'error', error: 'capture request failed' });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function downloadLatestPowerCapture() {
+  if (!powerCaptureState || !powerCaptureState.download_url) return;
+  window.location.href = powerCaptureState.download_url;
+}
+
+async function loadPowerCaptures() {
+  try {
+    const captures = await fetch('/api/captures').then(r => r.json());
+    const tbody = document.getElementById('powerCaptureBody');
+    tbody.innerHTML = '';
+    for (const c of captures) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:10px">${c.name}</td>
+        <td>${c.size_kb} KB</td>
+        <td><a href="${c.download_url}" style="color:var(--accent)">dl</a></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  } catch (e) {}
 }
 
 // ── Driver status ────────────────────────────────────────────────────────
@@ -1414,14 +3586,12 @@ function connectSSE() {
       };
       addInaChartPoint(point, false);
       if (point.channel != null) touchedInaCharts.add(Number(point.channel));
-    }
-    for (const channel of touchedInaCharts) {
-      if (inaCharts[channel]) inaCharts[channel].update();
-    }
-    if (Number(d.channel) === Number(inaActiveChannel)) {
-      updateStats(d);
-    }
-    updateInaPower(d);
+	    }
+	    for (const channel of touchedInaCharts) {
+	      scheduleInaDrxTroughAnalysis(channel, false);
+	      if (inaCharts[channel]) inaCharts[channel].update();
+	    }
+	    updateInaPower(d);
   });
 
   evtSource.addEventListener('state', (e) => {
@@ -1440,6 +3610,10 @@ function connectSSE() {
     updateDriver(JSON.parse(e.data));
   });
 
+  evtSource.addEventListener('system', (e) => {
+    updateSystemStats(JSON.parse(e.data));
+  });
+
   evtSource.addEventListener('rtt', (e) => {
     updateRtt(JSON.parse(e.data));
   });
@@ -1452,6 +3626,10 @@ function connectSSE() {
     updateLogicAnalyzer(JSON.parse(e.data));
   });
 
+  evtSource.addEventListener('power_capture', (e) => {
+    updatePowerCapture(JSON.parse(e.data));
+  });
+
   evtSource.addEventListener('esp32_ip', (e) => {
     const data = JSON.parse(e.data);
     document.getElementById('triggerTarget').textContent = data.ip + ':{{ esp32_port }}';
@@ -1459,6 +3637,24 @@ function connectSSE() {
 
   evtSource.addEventListener('ina219', (e) => {
     updateIna(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('external_monitor', (e) => {
+    updateIna226(JSON.parse(e.data));
+  });
+
+  evtSource.addEventListener('external_monitor_power', (e) => {
+    const d = JSON.parse(e.data);
+    const samples = Array.isArray(d.samples) ? d.samples : [d];
+    for (const p of samples) {
+      addIna226ChartPoint({
+        ...p,
+        avg_window_s: p.avg_window_s || d.avg_window_s,
+      }, false);
+    }
+    trimIna226BuffersToMax();
+    scheduleDrxTroughAnalysis(false);
+    requestIna226ChartUpdate();
   });
 
   evtSource.onopen = () => {
@@ -1476,9 +3672,12 @@ function connectSSE() {
 
 async function init() {
   initInaPanel();
+  initExternalMonitorControls();
+  initIna226Chart();
 
   // Load Waveshare HAT state before history so chart filtering knows active/high-speed channels.
   await loadInaStatus(true);
+  await loadIna226Status();
 
   // Load history
   try {
@@ -1491,8 +3690,23 @@ async function init() {
     for (const channel of touchedInaCharts) {
       if (inaCharts[channel]) inaCharts[channel].update();
     }
-    const activeHist = hist.filter(p => Number(p.channel) === Number(inaActiveChannel));
-    if (activeHist.length > 0) updateStats(activeHist[activeHist.length - 1]);
+    const latestByChannel = new Map();
+    for (const p of hist) {
+      if (p.channel != null) latestByChannel.set(Number(p.channel), p);
+    }
+    for (const latest of latestByChannel.values()) {
+      updateInaPower(latest);
+    }
+  } catch (e) {}
+
+  try {
+    const hist = await fetch('/api/external-monitor/history').then(r => r.json());
+    for (const p of hist) {
+      addIna226ChartPoint(p, false);
+    }
+    trimIna226BuffersToMax();
+    setDrxEnabled(false);
+    requestIna226ChartUpdate();
   } catch (e) {}
 
   // Load state log
@@ -1508,6 +3722,10 @@ async function init() {
     const drv = await fetch('/api/driver').then(r => r.json());
     updateDriver(drv);
   } catch (e) {}
+
+  await loadSystemStats();
+  await loadPowerCaptureStatus();
+  await loadPowerCaptures();
 
   // Load RTT history
   try {
@@ -1529,6 +3747,7 @@ async function init() {
   } catch (e) {}
 
   connectSSE();
+  setInterval(loadPowerCaptureStatus, 1000);
 }
 
 init();

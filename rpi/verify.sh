@@ -8,6 +8,7 @@ OK=true
 
 echo "=== Hardware Verification ==="
 echo ""
+ADDRS=""
 
 # Check I2C
 echo -n "I2C bus:    "
@@ -31,6 +32,15 @@ if echo "$ADDRS" | grep -q "40"; then
 else
     echo "WARN — not found at 0x40. Check HAT channel 1 wiring."
     OK=false
+fi
+
+# Check optional external INA226/INA228 monitor on suggested non-conflicting addresses
+echo -n "Ext monitor:"
+if echo "$ADDRS" | grep -Eq "(^| )4[45]( |$)"; then
+    FOUND_EXT=$(echo "$ADDRS" | tr ' ' '\n' | grep -E '^4[45]$' | sed 's/^/0x/' | paste -sd ',' -)
+    echo " OK — found at $FOUND_EXT"
+else
+    echo " INFO — not found at 0x44/0x45. Skip if external monitor is not installed."
 fi
 
 # Check UART — RPi 4 Bookworm may use ttyS0 instead of ttyAMA0
@@ -94,8 +104,8 @@ fi
 # Check Python deps
 echo -n "Python:     "
 VENV="$SCRIPT_DIR/.venv/bin/python3"
-if [ -x "$VENV" ] && "$VENV" -c "import serial, smbus2" 2>/dev/null; then
-    echo "OK — pyserial + smbus2 installed"
+if [ -x "$VENV" ] && "$VENV" -c "import serial, smbus2, flask" 2>/dev/null; then
+    echo "OK — pyserial + smbus2 + flask installed"
 else
     echo "FAIL — run setup_rpi.sh to install deps"
     OK=false
