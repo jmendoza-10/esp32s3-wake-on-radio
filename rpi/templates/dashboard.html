@@ -296,6 +296,57 @@
   .monitor-config-drawer[open] summary {
     margin-bottom: 4px;
   }
+  .wiring-reference {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+  }
+  .wiring-reference summary {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .wiring-reference-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .wiring-reference-card {
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+  }
+  .wiring-reference-card h3 {
+    margin: 0 0 7px;
+    color: var(--text);
+    font-size: 11px;
+  }
+  .wiring-reference-card pre {
+    margin: 0 0 7px;
+    overflow-x: auto;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 10px;
+    line-height: 1.5;
+    white-space: pre;
+  }
+  .wiring-reference-note {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.45;
+  }
+  .wiring-reference-warning {
+    margin-top: 9px;
+    color: var(--orange);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.45;
+  }
   .ina-panel-header {
     display: flex;
     align-items: flex-start;
@@ -469,6 +520,7 @@
     .ina-input-row.four { grid-template-columns: 1fr; }
     .ina-button-row.four { grid-template-columns: 1fr 1fr; }
     .ina-button-row.three { grid-template-columns: 1fr 1fr; }
+    .wiring-reference-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -489,6 +541,44 @@
 	      <div class="compact-detail">
 	        High-speed channels <span id="inaRange" style="color:var(--text)">--</span>
 	      </div>
+      <details class="wiring-reference">
+        <summary>WIRING REFERENCE</summary>
+        <div class="wiring-reference-grid">
+          <div class="wiring-reference-card">
+            <h3>Waveshare INA219 channels</h3>
+            <pre>CH1 0x40   CH2 0x41
+CH3 0x42   CH4 0x43
+
+SUPPLY + -> INx+ -> [0.1 ohm] -> INx- -> DUT +
+SUPPLY - -------------------------------> DUT GND
+              HAT GND -----------------> DUT GND</pre>
+            <div class="wiring-reference-note">
+              INx+ is the source side; INx- is the DUT side. The displayed bus
+              voltage is INx- relative to HAT ground.
+            </div>
+          </div>
+          <div class="wiring-reference-card">
+            <h3>Red INA228 module at 0x44</h3>
+            <pre>RPi 1/17 3V3 -> VCC    RPi 3 GPIO2 -> SDA
+RPi 6/9/14  -> GND    RPi 5 GPIO3 -> SCL
+
+12V + -> VIN+ -> [onboard R002] -> VIN- -> DUT +
+                                      +---- VBUS
+12V - -> module/RPi GND -----------------> DUT GND
+
+Screw block, top to bottom: VIN-, VBUS, VIN+</pre>
+            <div class="wiring-reference-note">
+              Route load current through VIN+ and VIN-. VBUS is a sense input:
+              jumper it to VIN-. ALE/ALERT is optional. Do not add another shunt.
+            </div>
+          </div>
+        </div>
+        <div class="wiring-reference-warning">
+          POWER OFF BEFORE WIRING. Use 3.3 V logic, share ground, and never
+          connect the monitored 12 V rail to a Raspberry Pi power pin. A nominal
+          12 V rail should display close to 12 V before current data is trusted.
+        </div>
+      </details>
       <div class="ina-channel-row" id="ina226Row" style="margin-top:12px">
         <div class="ina-channel-panel" id="ina226Card">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px">

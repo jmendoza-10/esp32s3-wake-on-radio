@@ -37,6 +37,10 @@ A Linux kernel driver (`esp32_wor.ko`) monitors a dedicated GPIO line from the E
 
 ### Wiring
 
+For the complete lab wiring reference, including all four Waveshare INA219
+channels and the external INA228, see
+[Power Monitor Wiring Reference](docs/power-monitor-wiring.md).
+
 ```
                   ┌──────────────────────────────────┐
                   │          Raspberry Pi 4           │
