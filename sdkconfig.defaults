@@ -1,8 +1,10 @@
 # Target
 CONFIG_IDF_TARGET="esp32s3"
 
-# Serial flasher — 921600 baud for faster flashing
-CONFIG_ESPTOOLPY_BAUD_921600B=y
+# Flash baud is not a Kconfig option on ESP-IDF 5.4. The
+# ESPTOOLPY_BAUD_* choice symbols are unknown and were ignored by
+# CMake/idf.py. Default flasher baud is 460800. For 921600, set
+# ESPBAUD=921600 or run: idf.py -b 921600 flash
 
 # CPU — single core is enough and saves power
 CONFIG_FREERTOS_UNICORE=y

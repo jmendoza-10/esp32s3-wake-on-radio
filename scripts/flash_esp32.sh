@@ -26,7 +26,9 @@ usage() {
     echo "  --no-monitor               Skip the serial monitor prompt after flashing"
     echo ""
     echo "Prerequisites:"
-    echo "  1. ESP-IDF installed and sourced:  . ~/workspace/opensource/esp/esp-idf/export.sh"
+    echo "  1. ESP-IDF sourced from this machine's install, for example:"
+    echo "       . \"\${IDF_PATH:-\$HOME/esp/esp-idf}/export.sh\""
+    echo "     The install directory is not the same on every machine."
     echo "  2. ESP32-S3 connected via USB"
     echo ""
     echo "Examples:"
@@ -109,7 +111,7 @@ fi
 
 # Check ESP-IDF
 if [ -z "${IDF_PATH:-}" ]; then
-    echo "Error: ESP-IDF not found. Run: . ~/workspace/opensource/esp/esp-idf/export.sh"
+    echo "Error: ESP-IDF not found. Source export.sh from the install on this machine, for example: . \"\$HOME/esp/esp-idf/export.sh\""
     exit 1
 fi
 
