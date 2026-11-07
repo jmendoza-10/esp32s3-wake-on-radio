@@ -141,8 +141,10 @@ GPIO stability through deep sleep is maintained by:
 ### 1. Flash the ESP32-S3
 
 ```bash
-# Source ESP-IDF
-. ~/workspace/opensource/esp/esp-idf/export.sh
+# Source ESP-IDF from this machine's install. The path is not universal.
+# Espressif's macOS/Linux guide uses ~/esp/esp-idf. If IDF_PATH is already
+# set, that directory is used instead.
+. "${IDF_PATH:-$HOME/esp/esp-idf}/export.sh"
 
 # Flash baseline (deep sleep + timer)
 ./scripts/flash_esp32.sh baseline --wifi-ssid YOUR_SSID --wifi-pass YOUR_PASS

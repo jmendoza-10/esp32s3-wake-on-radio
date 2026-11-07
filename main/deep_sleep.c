@@ -1,7 +1,6 @@
 #include "deep_sleep.h"
 
 #include <stdio.h>
-#include <string.h>
 #include "esp_log.h"
 #include "esp_sleep.h"
 #include "driver/gpio.h"
@@ -9,9 +8,14 @@
 
 static const char *TAG = "deep_sleep";
 
-/* Map individual wakeup cause bits to names */
+/*
+ * esp_sleep_get_wakeup_cause() returns one esp_sleep_wakeup_cause_t.
+ * ESP-IDF 5.4.0–5.4.2 do not declare esp_sleep_get_wakeup_causes().
+ * That later API returns a bitmap of BIT(cause), not the enum value,
+ * so these labels are matched with equality.
+ */
 static const struct {
-    esp_sleep_wakeup_cause_t bit;
+    esp_sleep_wakeup_cause_t cause;
     const char *name;
 } wakeup_cause_map[] = {
     { ESP_SLEEP_WAKEUP_TIMER,    "TIMER" },
@@ -25,24 +29,20 @@ static const struct {
 
 const char *deep_sleep_wakeup_cause_str(void)
 {
-    static char buf[64];
-    uint32_t causes = esp_sleep_get_wakeup_causes();
+    esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
 
-    if (causes == 0) {
+    /* Enum value 0: reset was not an exit from deep sleep. */
+    if (cause == ESP_SLEEP_WAKEUP_UNDEFINED) {
         return "POWER_ON";
     }
 
-    buf[0] = '\0';
     for (size_t i = 0; i < sizeof(wakeup_cause_map) / sizeof(wakeup_cause_map[0]); i++) {
-        if (causes & (uint32_t)wakeup_cause_map[i].bit) {
-            if (buf[0] != '\0') {
-                strlcat(buf, "+", sizeof(buf));
-            }
-            strlcat(buf, wakeup_cause_map[i].name, sizeof(buf));
+        if (cause == wakeup_cause_map[i].cause) {
+            return wakeup_cause_map[i].name;
         }
     }
 
-    return buf[0] ? buf : "UNKNOWN";
+    return "UNKNOWN";
 }
 
 void deep_sleep_enter_timed(uint32_t seconds)

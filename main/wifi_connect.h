@@ -1,6 +1,7 @@
 #pragma once
 
 #include "esp_err.h"
+#include "stdbool.h"
 
 /* Initialise NVS, netif, and event loop. Safe to call multiple times. */
 esp_err_t wifi_system_init(void);
